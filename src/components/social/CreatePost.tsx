@@ -16,7 +16,7 @@ interface CreatePostProps {
 }
 
 export const CreatePost = forwardRef<HTMLDivElement, CreatePostProps>(
-  ({ onPostCreated, currentProfile }, ref) => {
+  function CreatePost({ onPostCreated, currentProfile }, ref) {
     const [content, setContent] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useAuth();
@@ -94,5 +94,3 @@ export const CreatePost = forwardRef<HTMLDivElement, CreatePostProps>(
     );
   }
 );
-
-CreatePost.displayName = 'CreatePost';
