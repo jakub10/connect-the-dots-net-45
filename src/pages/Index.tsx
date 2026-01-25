@@ -1,12 +1,137 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Sidebar } from '@/components/social/Sidebar';
+import { Feed } from '@/components/social/Feed';
+import { RightSidebar } from '@/components/social/RightSidebar';
+import { AuthModal } from '@/components/auth/AuthModal';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+
+interface Profile {
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+}
 
 const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const { user, loading } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username, full_name, avatar_url')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        setCurrentProfile(data);
+      } else {
+        setCurrentProfile(null);
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  // Landing page for non-authenticated users
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
+          <div className="relative container mx-auto px-4 py-20 lg:py-32">
+            <div className="max-w-3xl mx-auto text-center">
+              <h1 className="text-5xl lg:text-7xl font-bold mb-6">
+                <span className="gradient-text">SocialConnect</span>
+              </h1>
+              <p className="text-xl lg:text-2xl text-muted-foreground mb-8">
+                Připoj se k milionům lidí, kteří sdílejí své myšlenky, 
+                navazují přátelství a objevují nové příležitosti.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  size="lg"
+                  onClick={() => setShowAuthModal(true)}
+                  className="text-lg px-8"
+                >
+                  Začít zdarma
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setShowAuthModal(true)}
+                  className="text-lg px-8"
+                >
+                  Přihlásit se
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="container mx-auto px-4 py-20">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-card rounded-2xl p-8 border border-border text-center animate-fadeIn">
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">💬</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Sdílej své myšlenky</h3>
+              <p className="text-muted-foreground">
+                Publikuj příspěvky, fotky a videa. Sdílej, co máš na srdci.
+              </p>
+            </div>
+            <div className="bg-card rounded-2xl p-8 border border-border text-center animate-fadeIn" style={{ animationDelay: '0.1s' }}>
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">👥</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Najdi přátele</h3>
+              <p className="text-muted-foreground">
+                Propoj se s lidmi z celého světa. Buduj vztahy a komunitu.
+              </p>
+            </div>
+            <div className="bg-card rounded-2xl p-8 border border-border text-center animate-fadeIn" style={{ animationDelay: '0.2s' }}>
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">🚀</span>
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Objevuj nové</h3>
+              <p className="text-muted-foreground">
+                Sleduj trendy, objevuj zajímavý obsah a inspiruj se.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      </div>
+    );
+  }
+
+  // Main app for authenticated users
+  return (
+    <div className="min-h-screen bg-background">
+      <Sidebar currentProfile={currentProfile} />
+      
+      <main className="ml-64 mr-80 py-6 px-8">
+        <div className="max-w-2xl mx-auto">
+          <Feed currentProfile={currentProfile} />
+        </div>
+      </main>
+
+      <RightSidebar />
     </div>
   );
 };
