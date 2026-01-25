@@ -26,8 +26,8 @@ interface PostCardProps {
   onLikeChange?: () => void;
 }
 
-export const PostCard = forwardRef<HTMLElement, PostCardProps>(
-  ({ post, onLikeChange }, ref) => {
+export const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
+  function PostCard({ post, onLikeChange }, ref) {
     const [isLiked, setIsLiked] = useState(post.is_liked || false);
     const [likesCount, setLikesCount] = useState(post.likes_count || 0);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -63,7 +63,7 @@ export const PostCard = forwardRef<HTMLElement, PostCardProps>(
     });
 
     return (
-      <article ref={ref} className="bg-card rounded-xl border border-border p-4 post-card animate-fadeIn">
+      <div ref={ref} className="bg-card rounded-xl border border-border p-4 post-card animate-fadeIn">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -121,9 +121,7 @@ export const PostCard = forwardRef<HTMLElement, PostCardProps>(
             <Bookmark className="h-5 w-5" />
           </Button>
         </div>
-      </article>
+      </div>
     );
   }
 );
-
-PostCard.displayName = 'PostCard';

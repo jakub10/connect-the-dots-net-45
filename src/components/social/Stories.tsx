@@ -19,7 +19,7 @@ const mockStories: Story[] = [
   { id: '6', username: 'tomas', avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=tomas', hasUnseenStory: false },
 ];
 
-export const Stories = forwardRef<HTMLDivElement>((_, ref) => {
+export const Stories = forwardRef<HTMLDivElement>(function Stories(_, ref) {
   return (
     <div ref={ref} className="bg-card rounded-xl border border-border p-4 mb-4">
       <ScrollArea className="w-full whitespace-nowrap">
@@ -50,5 +50,3 @@ export const Stories = forwardRef<HTMLDivElement>((_, ref) => {
     </div>
   );
 });
-
-Stories.displayName = 'Stories';
