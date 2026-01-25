@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import { Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -19,9 +18,9 @@ const mockStories: Story[] = [
   { id: '6', username: 'tomas', avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=tomas', hasUnseenStory: false },
 ];
 
-export const Stories = forwardRef<HTMLDivElement>(function Stories(_, ref) {
+export function Stories() {
   return (
-    <div ref={ref} className="bg-card rounded-xl border border-border p-4 mb-4">
+    <div className="bg-card rounded-xl border border-border p-4 mb-4">
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex gap-4">
           {/* Add story button */}
@@ -49,4 +48,4 @@ export const Stories = forwardRef<HTMLDivElement>(function Stories(_, ref) {
       </ScrollArea>
     </div>
   );
-});
+}

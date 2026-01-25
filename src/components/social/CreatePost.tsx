@@ -1,4 +1,4 @@
-import { useState, forwardRef } from 'react';
+import { useState } from 'react';
 import { Image, Smile, MapPin, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,7 @@ interface CreatePostProps {
   } | null;
 }
 
-export const CreatePost = forwardRef<HTMLDivElement, CreatePostProps>(
-  function CreatePost({ onPostCreated, currentProfile }, ref) {
+export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
     const [content, setContent] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useAuth();
@@ -54,7 +53,7 @@ export const CreatePost = forwardRef<HTMLDivElement, CreatePostProps>(
     };
 
     return (
-      <div ref={ref} className="bg-card rounded-xl border border-border p-4 mb-4 animate-fadeIn">
+      <div className="bg-card rounded-xl border border-border p-4 mb-4 animate-fadeIn">
         <div className="flex gap-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={currentProfile?.avatar_url || ''} />
@@ -92,5 +91,4 @@ export const CreatePost = forwardRef<HTMLDivElement, CreatePostProps>(
         </div>
       </div>
     );
-  }
-);
+}
