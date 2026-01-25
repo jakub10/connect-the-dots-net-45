@@ -1,4 +1,4 @@
-import { useState, forwardRef } from 'react';
+import { useState } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,7 @@ interface PostCardProps {
   onLikeChange?: () => void;
 }
 
-export const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
-  function PostCard({ post, onLikeChange }, ref) {
+export function PostCard({ post, onLikeChange }: PostCardProps) {
     const [isLiked, setIsLiked] = useState(post.is_liked || false);
     const [likesCount, setLikesCount] = useState(post.likes_count || 0);
     const [isAnimating, setIsAnimating] = useState(false);
@@ -63,7 +62,7 @@ export const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
     });
 
     return (
-      <div ref={ref} className="bg-card rounded-xl border border-border p-4 post-card animate-fadeIn">
+      <article className="bg-card rounded-xl border border-border p-4 post-card animate-fadeIn">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -121,7 +120,6 @@ export const PostCard = forwardRef<HTMLDivElement, PostCardProps>(
             <Bookmark className="h-5 w-5" />
           </Button>
         </div>
-      </div>
+      </article>
     );
-  }
-);
+}
