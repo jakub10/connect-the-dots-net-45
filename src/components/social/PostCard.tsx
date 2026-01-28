@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -218,7 +218,7 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
   });
 
   // Check if post is saved on mount
-  useState(() => {
+  useEffect(() => {
     const checkSaved = async () => {
       if (!user) return;
       const { data } = await supabase
@@ -230,7 +230,7 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
       setIsSaved(!!data);
     };
     checkSaved();
-  });
+  }, [user, post.id]);
 
   return (
     <>

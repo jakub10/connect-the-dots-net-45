@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
@@ -8,10 +8,10 @@ import { PostCard } from '@/components/social/PostCard';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Loader2, MapPin, Link as LinkIcon, Calendar, MessageCircle } from 'lucide-react';
+import { Loader2, MapPin, Link as LinkIcon, Calendar, MessageCircle, UserPlus, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
-import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
   user_id: string;
@@ -45,15 +45,22 @@ const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
+  const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending' | 'accepted'>('none');
+  const [postsCount, setPostsCount] = useState(0);
+  const [friendsCount, setFriendsCount] = useState(0);
 
   useEffect(() => {
-    fetchProfile();
-    fetchCurrentProfile();
-  }, [userId]);
+    if (userId) {
+      fetchProfile();
+      fetchCurrentProfile();
+      checkFriendship();
+    }
+  }, [userId, user]);
 
   const fetchCurrentProfile = async () => {
     if (!user) return;
@@ -63,6 +70,22 @@ const UserProfile = () => {
       .eq('user_id', user.id)
       .maybeSingle();
     setCurrentProfile(data);
+  };
+
+  const checkFriendship = async () => {
+    if (!user || !userId || user.id === userId) return;
+    
+    const { data } = await supabase
+      .from('friendships')
+      .select('status')
+      .or(`and(requester_id.eq.${user.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${user.id})`)
+      .maybeSingle();
+    
+    if (data) {
+      setFriendshipStatus(data.status as 'pending' | 'accepted');
+    } else {
+      setFriendshipStatus('none');
+    }
   };
 
   const fetchProfile = async () => {
@@ -82,11 +105,22 @@ const UserProfile = () => {
     setProfile(profileData);
 
     // Fetch user's posts
-    const { data: postsData } = await supabase
+    const { data: postsData, count } = await supabase
       .from('posts')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
+
+    setPostsCount(count || 0);
+
+    // Fetch friends count
+    const { count: friendsTotal } = await supabase
+      .from('friendships')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+    setFriendsCount(friendsTotal || 0);
 
     if (postsData && postsData.length > 0) {
       const postIds = postsData.map(p => p.id);
@@ -165,6 +199,26 @@ const UserProfile = () => {
     }
   };
 
+  const sendFriendRequest = async () => {
+    if (!user || !profile) return;
+
+    const { error } = await supabase
+      .from('friendships')
+      .insert({
+        requester_id: user.id,
+        addressee_id: profile.user_id,
+        status: 'pending',
+      });
+
+    if (!error) {
+      setFriendshipStatus('pending');
+      toast({
+        title: 'Žádost odeslána',
+        description: `Žádost o přátelství byla odeslána uživateli ${profile.full_name}.`,
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -201,67 +255,134 @@ const UserProfile = () => {
       
       <main className="ml-64 mr-80 py-6 px-8">
         <div className="max-w-2xl mx-auto space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile.avatar_url || ''} />
-                <AvatarFallback className="text-2xl">{profile.full_name[0]}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
+          {/* Profile Card */}
+          <Card className="overflow-hidden">
+            {/* Cover Image */}
+            <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
+            
+            <CardHeader className="relative pt-0">
+              {/* Avatar */}
+              <div className="absolute -top-16 left-6">
+                <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                  <AvatarImage src={profile.avatar_url || ''} />
+                  <AvatarFallback className="text-4xl bg-primary/10">
+                    {profile.full_name[0]}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex justify-end gap-2 pt-2">
+                {!isOwnProfile && user && (
+                  <>
+                    {friendshipStatus === 'none' && (
+                      <Button variant="outline" size="sm" onClick={sendFriendRequest}>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Přidat přítele
+                      </Button>
+                    )}
+                    {friendshipStatus === 'pending' && (
+                      <Button variant="outline" size="sm" disabled>
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Žádost odeslána
+                      </Button>
+                    )}
+                    {friendshipStatus === 'accepted' && (
+                      <Button variant="outline" size="sm" disabled>
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Přátelé
+                      </Button>
+                    )}
+                    <Button size="sm" onClick={startConversation}>
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Zpráva
+                    </Button>
+                  </>
+                )}
+                {isOwnProfile && (
+                  <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+                    Upravit profil
+                  </Button>
+                )}
+              </div>
+
+              {/* Name and username */}
+              <div className="mt-12">
                 <h1 className="text-2xl font-bold">{profile.full_name}</h1>
                 <p className="text-muted-foreground">@{profile.username}</p>
               </div>
-              {!isOwnProfile && user && (
-                <Button onClick={startConversation}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Zpráva
-                </Button>
-              )}
             </CardHeader>
+
             <CardContent className="space-y-4">
               {profile.bio && (
-                <p className="text-foreground">{profile.bio}</p>
+                <p className="text-foreground leading-relaxed">{profile.bio}</p>
               )}
+              
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 {profile.location && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />
-                    {profile.location}
+                    <span>{profile.location}</span>
                   </div>
                 )}
                 {profile.website && (
                   <a
-                    href={profile.website}
+                    href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-primary hover:underline"
+                    className="flex items-center gap-1.5 text-primary hover:underline"
                   >
                     <LinkIcon className="h-4 w-4" />
-                    {profile.website}
+                    <span>{profile.website.replace(/^https?:\/\//, '')}</span>
                   </a>
                 )}
                 {profile.created_at && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <Calendar className="h-4 w-4" />
-                    Členem od {format(new Date(profile.created_at), 'MMMM yyyy', { locale: cs })}
+                    <span>Členem od {format(new Date(profile.created_at), 'MMMM yyyy', { locale: cs })}</span>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
 
+          {/* Stats Card */}
+          <Card>
+            <CardContent className="py-4">
+              <div className="grid grid-cols-3 divide-x divide-border">
+                <div className="text-center px-4">
+                  <p className="text-2xl font-bold text-foreground">{postsCount}</p>
+                  <p className="text-sm text-muted-foreground">Příspěvků</p>
+                </div>
+                <div className="text-center px-4">
+                  <p className="text-2xl font-bold text-foreground">{friendsCount}</p>
+                  <p className="text-sm text-muted-foreground">Přátel</p>
+                </div>
+                <div className="text-center px-4">
+                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-sm text-muted-foreground">Sledujících</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Posts */}
           <h2 className="text-xl font-semibold">Příspěvky</h2>
           
           {posts.length === 0 ? (
-            <div className="bg-card rounded-xl border border-border p-8 text-center">
-              <p className="text-muted-foreground">
-                Tento uživatel zatím nemá žádné příspěvky.
-              </p>
-            </div>
+            <Card>
+              <CardContent className="py-8 text-center">
+                <p className="text-muted-foreground">
+                  {isOwnProfile 
+                    ? 'Zatím nemáte žádné příspěvky.' 
+                    : 'Tento uživatel zatím nemá žádné příspěvky.'}
+                </p>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-4">
               {posts.map(post => (
-                <PostCard key={post.id} post={post} />
+                <PostCard key={post.id} post={post} onLikeChange={fetchProfile} />
               ))}
             </div>
           )}

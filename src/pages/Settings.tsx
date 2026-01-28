@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
 import { RightSidebar } from '@/components/social/RightSidebar';
 import { Button } from '@/components/ui/button';
@@ -7,14 +8,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Moon, Shield, LogOut } from 'lucide-react';
+import { Bell, Moon, Shield, LogOut, User, Lock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
+
+interface Profile {
+  username: string;
+  full_name: string;
+  avatar_url: string | null;
+}
 
 const Settings = () => {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [notifications, setNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [privateAccount, setPrivateAccount] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, full_name, avatar_url')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setCurrentProfile(data);
+    };
+    fetchProfile();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -24,9 +52,49 @@ const Settings = () => {
     });
   };
 
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Chyba',
+        description: 'Hesla se neshodují.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: 'Chyba',
+        description: 'Heslo musí mít alespoň 6 znaků.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setChangingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    
+    if (error) {
+      toast({
+        title: 'Chyba',
+        description: 'Nepodařilo se změnit heslo.',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Úspěch',
+        description: 'Heslo bylo změněno.',
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+    setChangingPassword(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar currentProfile={null} />
+      <Sidebar currentProfile={currentProfile} />
       
       <main className="ml-64 mr-80 py-6 px-8">
         <div className="max-w-2xl mx-auto space-y-6">
@@ -42,11 +110,26 @@ const Settings = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <Label htmlFor="push-notifications">Push oznámení</Label>
+                <div>
+                  <Label htmlFor="push-notifications">Push oznámení</Label>
+                  <p className="text-sm text-muted-foreground">Dostávat oznámení na telefon</p>
+                </div>
                 <Switch
                   id="push-notifications"
                   checked={notifications}
                   onCheckedChange={setNotifications}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="email-notifications">E-mailová oznámení</Label>
+                  <p className="text-sm text-muted-foreground">Dostávat oznámení na e-mail</p>
+                </div>
+                <Switch
+                  id="email-notifications"
+                  checked={emailNotifications}
+                  onCheckedChange={setEmailNotifications}
                 />
               </div>
             </CardContent>
@@ -89,6 +172,45 @@ const Settings = () => {
                   onCheckedChange={setPrivateAccount}
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Password Change */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lock className="h-5 w-5" />
+                Změna hesla
+              </CardTitle>
+              <CardDescription>Aktualizuj své přístupové heslo</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Nové heslo</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Zadej nové heslo"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Potvrzení hesla</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Zopakuj nové heslo"
+                />
+              </div>
+              <Button 
+                onClick={handleChangePassword} 
+                disabled={changingPassword || !newPassword || !confirmPassword}
+              >
+                {changingPassword ? 'Měním heslo...' : 'Změnit heslo'}
+              </Button>
             </CardContent>
           </Card>
 
