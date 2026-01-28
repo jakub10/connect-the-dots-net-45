@@ -25,7 +25,12 @@ const Settings = () => {
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [notifications, setNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
   const [privateAccount, setPrivateAccount] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -44,6 +49,30 @@ const Settings = () => {
     };
     fetchProfile();
   }, [user]);
+
+  // Handle dark mode toggle
+  const handleDarkModeChange = (enabled: boolean) => {
+    setDarkMode(enabled);
+    if (enabled) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  // Initialize dark mode from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      setDarkMode(true);
+    } else if (savedTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+      setDarkMode(false);
+    }
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -153,7 +182,7 @@ const Settings = () => {
                 <Switch
                   id="dark-mode"
                   checked={darkMode}
-                  onCheckedChange={setDarkMode}
+                  onCheckedChange={handleDarkModeChange}
                 />
               </div>
             </CardContent>
