@@ -6,10 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, MessageCircle, Search, ArrowLeft } from 'lucide-react';
+import { Loader2, Send, MessageCircle, Search, ArrowLeft, Smile, Check, CheckCheck, Image } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cs } from 'date-fns/locale';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 interface Profile {
   user_id: string;
@@ -25,6 +28,7 @@ interface Conversation {
   updated_at: string;
   other_profile?: Profile;
   last_message?: string;
+  unread_count?: number;
 }
 
 interface Message {
@@ -34,6 +38,12 @@ interface Message {
   content: string;
   read: boolean;
   created_at: string;
+}
+
+interface PresenceData {
+  user_id: string;
+  online_at: string;
+  typing_in: string | null;
 }
 
 const Messages = () => {
@@ -48,19 +58,29 @@ const Messages = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Profile[]>([]);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [otherUserOnline, setOtherUserOnline] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchConversations();
     fetchCurrentProfile();
+    updatePresence();
+
+    // Update presence periodically
+    const presenceInterval = setInterval(updatePresence, 30000);
+    return () => clearInterval(presenceInterval);
   }, [user]);
 
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
+      markMessagesAsRead(selectedConversation.id);
+      checkOtherUserOnline();
       
       // Subscribe to new messages
-      const channel = supabase
+      const messagesChannel = supabase
         .channel(`messages-${selectedConversation.id}`)
         .on(
           'postgres_changes',
@@ -71,13 +91,59 @@ const Messages = () => {
             filter: `conversation_id=eq.${selectedConversation.id}`,
           },
           (payload) => {
-            setMessages(prev => [...prev, payload.new as Message]);
+            const newMsg = payload.new as Message;
+            setMessages(prev => [...prev, newMsg]);
+            // Mark as read if from other user
+            if (newMsg.sender_id !== user?.id) {
+              markMessageAsRead(newMsg.id);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${selectedConversation.id}`,
+          },
+          (payload) => {
+            setMessages(prev => 
+              prev.map(msg => msg.id === payload.new.id ? payload.new as Message : msg)
+            );
+          }
+        )
+        .subscribe();
+
+      // Subscribe to typing indicator
+      const otherUserId = selectedConversation.participant_1 === user?.id 
+        ? selectedConversation.participant_2 
+        : selectedConversation.participant_1;
+
+      const presenceChannel = supabase
+        .channel(`presence-${otherUserId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'user_presence',
+            filter: `user_id=eq.${otherUserId}`,
+          },
+          (payload) => {
+            const presence = payload.new as PresenceData;
+            setOtherUserTyping(presence.typing_in === selectedConversation.id);
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+            setOtherUserOnline(new Date(presence.online_at) > fiveMinutesAgo);
           }
         )
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(presenceChannel);
+        // Clear typing when leaving
+        updateTypingStatus(null);
       };
     }
   }, [selectedConversation]);
@@ -85,6 +151,78 @@ const Messages = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const updatePresence = async () => {
+    if (!user) return;
+    await supabase
+      .from('user_presence')
+      .upsert({ user_id: user.id, online_at: new Date().toISOString() });
+  };
+
+  const updateTypingStatus = async (conversationId: string | null) => {
+    if (!user) return;
+    await supabase
+      .from('user_presence')
+      .upsert({ 
+        user_id: user.id, 
+        online_at: new Date().toISOString(),
+        typing_in: conversationId 
+      });
+  };
+
+  const handleTyping = (value: string) => {
+    setNewMessage(value);
+    
+    if (selectedConversation && value.trim()) {
+      updateTypingStatus(selectedConversation.id);
+      
+      // Clear typing after 2 seconds of no input
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        updateTypingStatus(null);
+      }, 2000);
+    } else {
+      updateTypingStatus(null);
+    }
+  };
+
+  const checkOtherUserOnline = async () => {
+    if (!selectedConversation || !user) return;
+    
+    const otherUserId = selectedConversation.participant_1 === user.id 
+      ? selectedConversation.participant_2 
+      : selectedConversation.participant_1;
+
+    const { data } = await supabase
+      .from('user_presence')
+      .select('online_at')
+      .eq('user_id', otherUserId)
+      .maybeSingle();
+
+    if (data) {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      setOtherUserOnline(new Date(data.online_at) > fiveMinutesAgo);
+    }
+  };
+
+  const markMessagesAsRead = async (conversationId: string) => {
+    if (!user) return;
+    await supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('conversation_id', conversationId)
+      .neq('sender_id', user.id)
+      .eq('read', false);
+  };
+
+  const markMessageAsRead = async (messageId: string) => {
+    await supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('id', messageId);
+  };
 
   const fetchCurrentProfile = async () => {
     if (!user) return;
@@ -125,11 +263,24 @@ const Messages = () => {
       profilesData?.map(p => [p.user_id, p]) || []
     );
 
+    // Get unread counts
+    const { data: unreadData } = await supabase
+      .from('messages')
+      .select('conversation_id')
+      .neq('sender_id', user.id)
+      .eq('read', false);
+
+    const unreadCounts = new Map<string, number>();
+    unreadData?.forEach(msg => {
+      unreadCounts.set(msg.conversation_id, (unreadCounts.get(msg.conversation_id) || 0) + 1);
+    });
+
     const enrichedConversations = convData.map(conv => ({
       ...conv,
       other_profile: profilesMap.get(
         conv.participant_1 === user.id ? conv.participant_2 : conv.participant_1
       ),
+      unread_count: unreadCounts.get(conv.id) || 0,
     }));
 
     setConversations(enrichedConversations);
@@ -199,10 +350,16 @@ const Messages = () => {
     }
   };
 
+  const handleEmojiSelect = (emoji: { native: string }) => {
+    setNewMessage(prev => prev + emoji.native);
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || !user) return;
 
     setSendingMessage(true);
+    updateTypingStatus(null);
+    
     const { error } = await supabase
       .from('messages')
       .insert({
@@ -230,7 +387,7 @@ const Messages = () => {
       <main className="ml-64 py-0 px-0 h-screen">
         <div className="flex h-full">
           {/* Conversations list */}
-          <div className="w-80 border-r border-border flex flex-col">
+          <div className="w-80 border-r border-border flex flex-col bg-card">
             <div className="p-4 border-b border-border">
               <h1 className="text-xl font-bold mb-4">Zprávy</h1>
               <div className="relative">
@@ -246,7 +403,7 @@ const Messages = () => {
                 />
               </div>
               {searchResults.length > 0 && (
-                <div className="absolute z-10 mt-2 w-72 bg-card border border-border rounded-lg shadow-lg">
+                <div className="absolute z-50 mt-2 w-72 bg-popover border border-border rounded-lg shadow-lg">
                   {searchResults.map(profile => (
                     <div
                       key={profile.user_id}
@@ -282,17 +439,26 @@ const Messages = () => {
                 conversations.map(conv => (
                   <div
                     key={conv.id}
-                    className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-accent ${
+                    className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-accent transition-colors ${
                       selectedConversation?.id === conv.id ? 'bg-accent' : ''
                     }`}
                     onClick={() => setSelectedConversation(conv)}
                   >
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={conv.other_profile?.avatar_url || ''} />
-                      <AvatarFallback>{conv.other_profile?.full_name?.[0] || '?'}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={conv.other_profile?.avatar_url || ''} />
+                        <AvatarFallback>{conv.other_profile?.full_name?.[0] || '?'}</AvatarFallback>
+                      </Avatar>
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{conv.other_profile?.full_name}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium truncate">{conv.other_profile?.full_name}</p>
+                        {conv.unread_count ? (
+                          <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                            {conv.unread_count}
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="text-sm text-muted-foreground truncate">
                         {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true, locale: cs })}
                       </p>
@@ -308,7 +474,7 @@ const Messages = () => {
             {selectedConversation ? (
               <>
                 {/* Chat header */}
-                <div className="p-4 border-b border-border flex items-center gap-3">
+                <div className="p-4 border-b border-border flex items-center gap-3 bg-card">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -317,52 +483,108 @@ const Messages = () => {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </Button>
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={selectedConversation.other_profile?.avatar_url || ''} />
-                    <AvatarFallback>{selectedConversation.other_profile?.full_name?.[0] || '?'}</AvatarFallback>
-                  </Avatar>
-                  <div>
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={selectedConversation.other_profile?.avatar_url || ''} />
+                      <AvatarFallback>{selectedConversation.other_profile?.full_name?.[0] || '?'}</AvatarFallback>
+                    </Avatar>
+                    {otherUserOnline && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-online border-2 border-card rounded-full" />
+                    )}
+                  </div>
+                  <div className="flex-1">
                     <p className="font-medium">{selectedConversation.other_profile?.full_name}</p>
-                    <p className="text-sm text-muted-foreground">@{selectedConversation.other_profile?.username}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {otherUserTyping ? (
+                        <span className="text-primary">píše...</span>
+                      ) : otherUserOnline ? (
+                        <span className="text-online">online</span>
+                      ) : (
+                        `@${selectedConversation.other_profile?.username}`
+                      )}
+                    </p>
                   </div>
                 </div>
 
                 {/* Messages */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
-                    {messages.map(message => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                      >
+                    {messages.map((message, idx) => {
+                      const isOwn = message.sender_id === user?.id;
+                      const showReadStatus = isOwn && idx === messages.length - 1;
+                      
+                      return (
                         <div
-                          className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                            message.sender_id === user?.id
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
+                          key={message.id}
+                          className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                         >
-                          <p>{message.content}</p>
-                          <p className={`text-xs mt-1 ${
-                            message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                          }`}>
-                            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: cs })}
-                          </p>
+                          <div className="max-w-[70%]">
+                            <div
+                              className={`rounded-2xl px-4 py-2 ${
+                                isOwn
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <p>{message.content}</p>
+                            </div>
+                            <div className={`flex items-center gap-1 mt-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                              <p className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: cs })}
+                              </p>
+                              {isOwn && (
+                                message.read ? (
+                                  <CheckCheck className="h-3 w-3 text-primary" />
+                                ) : (
+                                  <Check className="h-3 w-3 text-muted-foreground" />
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {otherUserTyping && (
+                      <div className="flex justify-start">
+                        <div className="bg-muted rounded-2xl px-4 py-2">
+                          <div className="flex gap-1">
+                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    )}
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
 
                 {/* Message input */}
-                <div className="p-4 border-t border-border">
-                  <div className="flex gap-2">
+                <div className="p-4 border-t border-border bg-card">
+                  <div className="flex gap-2 items-end">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-muted-foreground shrink-0">
+                          <Smile className="h-5 w-5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 border-0" align="start" side="top">
+                        <Picker
+                          data={data}
+                          onEmojiSelect={handleEmojiSelect}
+                          theme="auto"
+                          locale="cs"
+                          previewPosition="none"
+                          skinTonePosition="none"
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <Input
                       placeholder="Napiš zprávu..."
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
+                      onChange={(e) => handleTyping(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                      className="flex-1"
                     />
                     <Button onClick={sendMessage} disabled={sendingMessage || !newMessage.trim()}>
                       {sendingMessage ? (

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,22 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface PostCardProps {
@@ -35,6 +51,7 @@ interface PostCardProps {
     is_liked?: boolean;
   };
   onLikeChange?: () => void;
+  onPostDeleted?: () => void;
 }
 
 interface Comment {
@@ -49,7 +66,7 @@ interface Comment {
   };
 }
 
-export function PostCard({ post, onLikeChange }: PostCardProps) {
+export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(post.is_liked || false);
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -59,8 +76,12 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const isOwnPost = user?.id === post.user_id;
 
   const handleLike = async () => {
     if (!user) {
@@ -139,6 +160,44 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
         description: 'Nepodařilo se zkopírovat odkaz.',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!user || !isOwnPost) return;
+
+    setDeleting(true);
+    try {
+      // Delete post image from storage if exists
+      if (post.image_url && post.image_url.includes('posts')) {
+        const path = post.image_url.split('/posts/')[1];
+        if (path) {
+          await supabase.storage.from('posts').remove([path]);
+        }
+      }
+
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Smazáno',
+        description: 'Příspěvek byl úspěšně smazán.',
+      });
+      onPostDeleted?.();
+    } catch (error) {
+      toast({
+        title: 'Chyba',
+        description: 'Nepodařilo se smazat příspěvek.',
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -232,6 +291,13 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
     checkSaved();
   }, [user, post.id]);
 
+  // Double click to like
+  const handleDoubleClick = () => {
+    if (!isLiked && user) {
+      handleLike();
+    }
+  };
+
   return (
     <>
       <article className="bg-card rounded-xl border border-border p-4 post-card animate-fadeIn">
@@ -249,9 +315,33 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
               </p>
             </div>
           </Link>
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-muted-foreground">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-2" />
+                Kopírovat odkaz
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSave}>
+                <Bookmark className="h-4 w-4 mr-2" />
+                {isSaved ? 'Odebrat z uložených' : 'Uložit příspěvek'}
+              </DropdownMenuItem>
+              {isOwnPost && (
+                <DropdownMenuItem 
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Smazat příspěvek
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Content */}
@@ -259,11 +349,14 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
 
         {/* Image */}
         {post.image_url && (
-          <div className="rounded-xl overflow-hidden mb-3">
+          <div 
+            className="rounded-xl overflow-hidden mb-3 cursor-pointer"
+            onDoubleClick={handleDoubleClick}
+          >
             <img
               src={post.image_url}
               alt="Post image"
-              className="w-full h-auto object-cover"
+              className="w-full h-auto object-cover max-h-[500px]"
             />
           </div>
         )}
@@ -275,7 +368,7 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
               variant="ghost"
               size="sm"
               onClick={handleLike}
-              className={`gap-2 like-button ${isLiked ? 'liked' : 'text-muted-foreground'} ${isAnimating ? 'animate-heartBeat' : ''}`}
+              className={`gap-2 like-button ${isLiked ? 'liked text-red-500' : 'text-muted-foreground'} ${isAnimating ? 'animate-heartBeat' : ''}`}
             >
               <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
               <span>{likesCount}</span>
@@ -356,6 +449,28 @@ export function PostCard({ post, onLikeChange }: PostCardProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Smazat příspěvek?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tato akce je nevratná. Příspěvek bude trvale smazán včetně všech komentářů a lajků.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Mazání...' : 'Smazat'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
