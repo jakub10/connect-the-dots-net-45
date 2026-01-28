@@ -157,7 +157,12 @@ export function Feed({ currentProfile }: FeedProps) {
         </div>
       ) : (
         posts.map((post) => (
-          <PostCard key={post.id} post={post} onLikeChange={fetchPosts} />
+          <PostCard 
+            key={post.id} 
+            post={post} 
+            onLikeChange={fetchPosts} 
+            onPostDeleted={fetchPosts}
+          />
         ))
       )}
     </div>

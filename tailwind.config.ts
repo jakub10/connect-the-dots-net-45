@@ -58,6 +58,7 @@ export default {
         like: "hsl(var(--like))",
         comment: "hsl(var(--comment))",
         share: "hsl(var(--share))",
+        online: "hsl(var(--online))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

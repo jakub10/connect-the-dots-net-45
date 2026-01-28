@@ -234,6 +234,7 @@ export type Database = {
           full_name: string
           id: string
           location: string | null
+          online_at: string | null
           updated_at: string
           user_id: string
           username: string
@@ -246,6 +247,7 @@ export type Database = {
           full_name: string
           id?: string
           location?: string | null
+          online_at?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -258,6 +260,7 @@ export type Database = {
           full_name?: string
           id?: string
           location?: string | null
+          online_at?: string | null
           updated_at?: string
           user_id?: string
           username?: string
@@ -317,6 +320,32 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_presence: {
+        Row: {
+          online_at: string | null
+          typing_in: string | null
+          user_id: string
+        }
+        Insert: {
+          online_at?: string | null
+          typing_in?: string | null
+          user_id: string
+        }
+        Update: {
+          online_at?: string | null
+          typing_in?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_presence_typing_in_fkey"
+            columns: ["typing_in"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
