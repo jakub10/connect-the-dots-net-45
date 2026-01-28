@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Moon, Shield, LogOut, User, Lock } from 'lucide-react';
+import { Bell, Moon, Shield, LogOut, Lock, Palette } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { AvatarBuilder } from '@/components/profile/AvatarBuilder';
 
 interface Profile {
   username: string;
@@ -134,6 +135,9 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Avatar Builder */}
+          <AvatarBuilder />
 
           <Card>
             <CardHeader>

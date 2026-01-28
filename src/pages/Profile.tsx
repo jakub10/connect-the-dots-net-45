@@ -10,9 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3 } from 'lucide-react';
+import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3, Trophy } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
+import { Achievements } from '@/components/profile/Achievements';
+import { useAchievements } from '@/hooks/useAchievements';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Profile {
   username: string;
@@ -33,6 +36,9 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Initialize achievements hook
+  useAchievements();
 
   // Edit form state
   const [fullName, setFullName] = useState('');
@@ -329,34 +335,30 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Stats Card */}
-          <Card>
-            <CardContent className="py-4">
-              <div className="grid grid-cols-3 divide-x divide-border">
-                <div className="text-center px-4">
-                  <p className="text-2xl font-bold text-foreground">0</p>
-                  <p className="text-sm text-muted-foreground">Příspěvků</p>
-                </div>
-                <div className="text-center px-4">
-                  <p className="text-2xl font-bold text-foreground">0</p>
-                  <p className="text-sm text-muted-foreground">Přátel</p>
-                </div>
-                <div className="text-center px-4">
-                  <p className="text-2xl font-bold text-foreground">0</p>
-                  <p className="text-sm text-muted-foreground">Sledujících</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Activity hint */}
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">
-                Vaše příspěvky se zobrazí zde
-              </p>
-            </CardContent>
-          </Card>
+          {/* Tabs for content */}
+          <Tabs defaultValue="achievements" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="achievements" className="gap-2">
+                <Trophy className="h-4 w-4" />
+                Achievementy
+              </TabsTrigger>
+              <TabsTrigger value="posts">Příspěvky</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="achievements" className="mt-4">
+              <Achievements />
+            </TabsContent>
+            
+            <TabsContent value="posts" className="mt-4">
+              <Card>
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">
+                    Vaše příspěvky se zobrazí zde
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 
