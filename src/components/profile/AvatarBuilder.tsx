@@ -227,30 +227,47 @@ export function AvatarBuilder() {
   const getAvatarUrl = (cfg: AvatarConfig, size = 200) => {
     const params = new URLSearchParams();
     params.set('seed', cfg.seed || user?.id || 'default');
+    
+    // Hair (topType in avataaars)
     params.set('top', cfg.hair);
+    params.set('hatColor', cfg.hairColor);
     params.set('hairColor', cfg.hairColor);
+    
+    // Skin
     params.set('skinColor', cfg.skinColor);
-    params.set('eyes', cfg.eyes);
-    params.set('eyebrows', cfg.eyebrows);
-    params.set('mouth', cfg.mouth);
-    params.set('clothing', cfg.clothing);
-    params.set('clothingColor', cfg.clothingColor);
     
+    // Face
+    params.set('eyeType', cfg.eyes);
+    params.set('eyebrowType', cfg.eyebrows);
+    params.set('mouthType', cfg.mouth);
+    
+    // Clothing - use clotheType and clotheColor for avataaars
+    params.set('clotheType', cfg.clothing);
+    params.set('clotheColor', cfg.clothingColor);
+    
+    // Accessories
     if (cfg.accessories) {
-      params.set('accessories', cfg.accessories);
-      params.set('accessoriesColor', cfg.accessoriesColor);
+      params.set('accessoriesType', cfg.accessories);
+    } else {
+      params.set('accessoriesType', 'blank');
     }
     
+    // Facial hair - use facialHairType for avataaars
     if (cfg.facialHair) {
-      params.set('facialHair', cfg.facialHair);
+      params.set('facialHairType', cfg.facialHair);
       params.set('facialHairColor', cfg.facialHairColor);
+    } else {
+      params.set('facialHairType', 'blank');
     }
     
+    // Background
     if (cfg.backgroundColor && cfg.backgroundColor !== 'transparent') {
       params.set('backgroundColor', cfg.backgroundColor);
     }
     
-    return `https://api.dicebear.com/7.x/avataaars/svg?${params.toString()}&size=${size}`;
+    params.set('size', size.toString());
+    
+    return `https://api.dicebear.com/7.x/avataaars/svg?${params.toString()}`;
   };
 
   const handleRandomize = () => {
@@ -450,7 +467,7 @@ export function AvatarBuilder() {
             </div>
 
             {/* Tab Content */}
-            <ScrollArea className="h-[400px]">
+            <ScrollArea className="h-[500px] lg:h-[600px]">
               <div className="p-4 space-y-5">
                 {activeTab === 'hair' && (
                   <>
