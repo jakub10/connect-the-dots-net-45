@@ -1,127 +1,195 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, Shuffle } from 'lucide-react';
+import { Loader2, Save, Shuffle, User, Shirt, Glasses, Sparkles } from 'lucide-react';
 
 interface AvatarConfig {
+  style: string;
   seed: string;
   hair: string;
   hairColor: string;
   skinColor: string;
-  eyes: string;
-  mouth: string;
+  accessories: string;
+  accessoriesColor: string;
+  facialHair: string;
+  facialHairColor: string;
   clothing: string;
   clothingColor: string;
-  accessories?: string;
-  accessoriesColor?: string;
+  eyes: string;
+  eyebrows: string;
+  mouth: string;
+  backgroundColor: string;
 }
 
+// Avataaars style options (more detailed and popular)
 const HAIR_STYLES = [
-  { id: 'short01', name: 'Krátké 1' },
-  { id: 'short02', name: 'Krátké 2' },
-  { id: 'short03', name: 'Krátké 3' },
-  { id: 'short04', name: 'Krátké 4' },
-  { id: 'short05', name: 'Krátké 5' },
-  { id: 'long01', name: 'Dlouhé 1' },
-  { id: 'long02', name: 'Dlouhé 2' },
-  { id: 'long03', name: 'Dlouhé 3' },
-  { id: 'long04', name: 'Dlouhé 4' },
-  { id: 'long05', name: 'Dlouhé 5' },
-  { id: 'long06', name: 'Dlouhé 6' },
-  { id: 'long07', name: 'Dlouhé 7' },
-  { id: 'long08', name: 'Dlouhé 8' },
-  { id: 'long09', name: 'Dlouhé 9' },
-  { id: 'long10', name: 'Dlouhé 10' },
-  { id: 'long11', name: 'Dlouhé 11' },
+  { id: 'dreads01', name: 'Dredy', emoji: '🧑‍🦱' },
+  { id: 'dreads02', name: 'Dredy 2', emoji: '🧑‍🦱' },
+  { id: 'frizzle', name: 'Kudrnaté', emoji: '👩‍🦱' },
+  { id: 'shaggy', name: 'Rozcuchané', emoji: '🧔' },
+  { id: 'curly', name: 'Vlnité', emoji: '👩‍🦱' },
+  { id: 'bigHair', name: 'Velké', emoji: '💇‍♀️' },
+  { id: 'bob', name: 'Mikádo', emoji: '👩' },
+  { id: 'bun', name: 'Drdol', emoji: '👩‍🦰' },
+  { id: 'longButNotTooLong', name: 'Polodlouhé', emoji: '🧑' },
+  { id: 'miaWallace', name: 'Ofina', emoji: '💇‍♀️' },
+  { id: 'straight01', name: 'Rovné 1', emoji: '👱‍♀️' },
+  { id: 'straight02', name: 'Rovné 2', emoji: '👱‍♀️' },
+  { id: 'shortFlat', name: 'Krátké rovné', emoji: '👨' },
+  { id: 'shortWaved', name: 'Krátké vlnité', emoji: '👨‍🦱' },
+  { id: 'shortCurly', name: 'Krátké kudrnaté', emoji: '👨‍🦱' },
+  { id: 'shortRound', name: 'Krátké kulaté', emoji: '👦' },
+  { id: 'sides', name: 'Po stranách', emoji: '👴' },
+  { id: 'caesar', name: 'César', emoji: '👨' },
+  { id: 'theCaesarAndSidePart', name: 'César s pěšinkou', emoji: '👨' },
 ];
 
 const HAIR_COLORS = [
-  { id: '2c1b18', name: 'Černé' },
-  { id: '6c4545', name: 'Hnědé' },
-  { id: 'b58143', name: 'Světle hnědé' },
-  { id: 'e8e1e1', name: 'Blond' },
-  { id: 'f59797', name: 'Růžové' },
-  { id: 'd64a3b', name: 'Červené' },
-  { id: '4a90d9', name: 'Modré' },
-  { id: '77311d', name: 'Zrzavé' },
+  { id: '2c1b18', name: 'Černá', color: '#2c1b18' },
+  { id: '724133', name: 'Tmavě hnědá', color: '#724133' },
+  { id: 'a55728', name: 'Hnědá', color: '#a55728' },
+  { id: 'b58143', name: 'Světle hnědá', color: '#b58143' },
+  { id: 'd6b370', name: 'Tmavá blond', color: '#d6b370' },
+  { id: 'e8e1e1', name: 'Platinová', color: '#e8e1e1' },
+  { id: 'ecdcbf', name: 'Blond', color: '#ecdcbf' },
+  { id: 'c93305', name: 'Zrzavá', color: '#c93305' },
+  { id: 'e24b4b', name: 'Červená', color: '#e24b4b' },
+  { id: 'f59797', name: 'Růžová', color: '#f59797' },
+  { id: '4a90d9', name: 'Modrá', color: '#4a90d9' },
+  { id: 'a55eea', name: 'Fialová', color: '#a55eea' },
 ];
 
 const SKIN_COLORS = [
-  { id: 'f2d3b1', name: 'Světlá' },
-  { id: 'edb98a', name: 'Střední' },
-  { id: 'd08b5b', name: 'Opálená' },
-  { id: 'ae5d29', name: 'Tmavší' },
-  { id: '614335', name: 'Tmavá' },
+  { id: 'ffdbb4', name: 'Světlá', color: '#ffdbb4' },
+  { id: 'edb98a', name: 'Střední světlá', color: '#edb98a' },
+  { id: 'd08b5b', name: 'Střední', color: '#d08b5b' },
+  { id: 'ae5d29', name: 'Tmavší', color: '#ae5d29' },
+  { id: '614335', name: 'Tmavá', color: '#614335' },
 ];
 
 const EYES = [
-  { id: 'variant01', name: 'Normální' },
-  { id: 'variant02', name: 'Šťastné' },
-  { id: 'variant03', name: 'Překvapené' },
-  { id: 'variant04', name: 'Smutné' },
-  { id: 'variant05', name: 'Mrkající' },
-  { id: 'variant06', name: 'Uzavřené' },
-  { id: 'variant07', name: 'Srdíčka' },
-  { id: 'variant08', name: 'Hvězdy' },
+  { id: 'default', name: 'Normální', emoji: '👁️' },
+  { id: 'happy', name: 'Šťastné', emoji: '😊' },
+  { id: 'wink', name: 'Mrkající', emoji: '😉' },
+  { id: 'close', name: 'Zavřené', emoji: '😌' },
+  { id: 'squint', name: 'Přimhouřené', emoji: '😏' },
+  { id: 'surprised', name: 'Překvapené', emoji: '😮' },
+  { id: 'cry', name: 'Plačící', emoji: '😢' },
+  { id: 'hearts', name: 'Srdíčka', emoji: '😍' },
+  { id: 'side', name: 'Do strany', emoji: '👀' },
+  { id: 'xDizzy', name: 'Závratě', emoji: '😵' },
+  { id: 'winkWacky', name: 'Bláznivé', emoji: '🤪' },
 ];
 
-const MOUTHS = [
-  { id: 'happy01', name: 'Šťastný' },
-  { id: 'happy02', name: 'Úsměv' },
-  { id: 'happy03', name: 'Široký úsměv' },
-  { id: 'happy04', name: 'Smích' },
-  { id: 'happy05', name: 'Zuby' },
-  { id: 'happy06', name: 'Jazyk' },
-  { id: 'happy07', name: 'Polibek' },
-  { id: 'sad01', name: 'Neutrální' },
-  { id: 'sad02', name: 'Zamračený' },
-  { id: 'sad03', name: 'Překvapený' },
+const EYEBROWS = [
+  { id: 'default', name: 'Normální', emoji: '😐' },
+  { id: 'defaultNatural', name: 'Přirozené', emoji: '🙂' },
+  { id: 'flatNatural', name: 'Ploché', emoji: '😑' },
+  { id: 'raisedExcited', name: 'Vzrušené', emoji: '😃' },
+  { id: 'raisedExcitedNatural', name: 'Nadšené', emoji: '🤩' },
+  { id: 'sadConcerned', name: 'Smutné', emoji: '😟' },
+  { id: 'sadConcernedNatural', name: 'Starostlivé', emoji: '😰' },
+  { id: 'unibrowNatural', name: 'Srostlé', emoji: '🤨' },
+  { id: 'upDown', name: 'Nahoru-dolů', emoji: '🧐' },
+  { id: 'upDownNatural', name: 'Zvídavé', emoji: '🤔' },
+  { id: 'angry', name: 'Naštvaný', emoji: '😠' },
+  { id: 'angryNatural', name: 'Rozzlobený', emoji: '😡' },
 ];
 
-const CLOTHING = [
-  { id: 'shirt01', name: 'Tričko' },
-  { id: 'shirt02', name: 'Košile' },
-  { id: 'shirt03', name: 'Mikina' },
-  { id: 'dress01', name: 'Šaty 1' },
-  { id: 'dress02', name: 'Šaty 2' },
+const MOUTH = [
+  { id: 'default', name: 'Normální', emoji: '😐' },
+  { id: 'smile', name: 'Úsměv', emoji: '🙂' },
+  { id: 'twinkle', name: 'Zářivý', emoji: '😊' },
+  { id: 'serious', name: 'Vážný', emoji: '😑' },
+  { id: 'tongue', name: 'Jazyk', emoji: '😛' },
+  { id: 'grimace', name: 'Šklebení', emoji: '😬' },
+  { id: 'sad', name: 'Smutný', emoji: '☹️' },
+  { id: 'screamOpen', name: 'Křik', emoji: '😱' },
+  { id: 'vomit', name: 'Nevolnost', emoji: '🤮' },
+  { id: 'eating', name: 'Jídlo', emoji: '😋' },
+  { id: 'disbelief', name: 'Nevěřící', emoji: '😦' },
+  { id: 'concerned', name: 'Znepokojený', emoji: '😕' },
 ];
 
-const CLOTHING_COLORS = [
-  { id: '6dbb58', name: 'Zelená' },
-  { id: '5199e4', name: 'Modrá' },
-  { id: 'e24b4b', name: 'Červená' },
-  { id: 'f3c63a', name: 'Žlutá' },
-  { id: 'a55eea', name: 'Fialová' },
-  { id: 'fc5c9c', name: 'Růžová' },
-  { id: '26de81', name: 'Mint' },
-  { id: 'fd9644', name: 'Oranžová' },
-  { id: '4b4b4b', name: 'Černá' },
-  { id: 'ffffff', name: 'Bílá' },
+const FACIAL_HAIR = [
+  { id: '', name: 'Žádné', emoji: '👶' },
+  { id: 'beardLight', name: 'Lehký vous', emoji: '🧔' },
+  { id: 'beardMedium', name: 'Střední vous', emoji: '🧔' },
+  { id: 'beardMajestic', name: 'Plný vous', emoji: '🧔‍♂️' },
+  { id: 'moustacheFancy', name: 'Knírek elegantní', emoji: '🥸' },
+  { id: 'moustacheMagnum', name: 'Knírek Magnum', emoji: '👨' },
 ];
 
 const ACCESSORIES = [
-  { id: '', name: 'Žádné' },
-  { id: 'glasses01', name: 'Brýle 1' },
-  { id: 'glasses02', name: 'Brýle 2' },
-  { id: 'glasses03', name: 'Sluneční brýle' },
+  { id: '', name: 'Žádné', emoji: '👤' },
+  { id: 'prescription01', name: 'Brýle 1', emoji: '🤓' },
+  { id: 'prescription02', name: 'Brýle 2', emoji: '👓' },
+  { id: 'round', name: 'Kulaté brýle', emoji: '🧐' },
+  { id: 'sunglasses', name: 'Sluneční brýle', emoji: '😎' },
+  { id: 'wayfarers', name: 'Wayfarers', emoji: '🕶️' },
+  { id: 'kurt', name: 'Kurt', emoji: '🎸' },
+];
+
+const CLOTHING = [
+  { id: 'blazerAndShirt', name: 'Sako a košile', emoji: '🤵' },
+  { id: 'blazerAndSweater', name: 'Sako a svetr', emoji: '👔' },
+  { id: 'collarAndSweater', name: 'Límec a svetr', emoji: '🧥' },
+  { id: 'graphicShirt', name: 'Tričko s grafikou', emoji: '👕' },
+  { id: 'hoodie', name: 'Mikina', emoji: '🧥' },
+  { id: 'overall', name: 'Montérky', emoji: '👷' },
+  { id: 'shirtCrewNeck', name: 'Tričko', emoji: '👕' },
+  { id: 'shirtScoopNeck', name: 'Triko s výstřihem', emoji: '👚' },
+  { id: 'shirtVNeck', name: 'Triko do V', emoji: '👕' },
+];
+
+const CLOTHING_COLORS = [
+  { id: '3c4f5c', name: 'Tmavě modrá', color: '#3c4f5c' },
+  { id: '65c9ff', name: 'Světle modrá', color: '#65c9ff' },
+  { id: '5199e4', name: 'Modrá', color: '#5199e4' },
+  { id: '25557c', name: 'Námořní', color: '#25557c' },
+  { id: '929598', name: 'Šedá', color: '#929598' },
+  { id: 'e6e6e6', name: 'Světle šedá', color: '#e6e6e6' },
+  { id: 'ffffff', name: 'Bílá', color: '#ffffff' },
+  { id: 'ff5c5c', name: 'Červená', color: '#ff5c5c' },
+  { id: 'ffafb9', name: 'Růžová', color: '#ffafb9' },
+  { id: 'ffdeb5', name: 'Béžová', color: '#ffdeb5' },
+  { id: 'ff488e', name: 'Magenta', color: '#ff488e' },
+  { id: '262e33', name: 'Černá', color: '#262e33' },
+];
+
+const BACKGROUND_COLORS = [
+  { id: 'b6e3f4', name: 'Světle modrá', color: '#b6e3f4' },
+  { id: 'c0aede', name: 'Levandulová', color: '#c0aede' },
+  { id: 'd1d4f9', name: 'Světle fialová', color: '#d1d4f9' },
+  { id: 'ffd5dc', name: 'Růžová', color: '#ffd5dc' },
+  { id: 'ffdfbf', name: 'Broskvová', color: '#ffdfbf' },
+  { id: 'ffeebb', name: 'Žlutá', color: '#ffeebb' },
+  { id: 'c1f0c1', name: 'Světle zelená', color: '#c1f0c1' },
+  { id: 'ffffff', name: 'Bílá', color: '#ffffff' },
+  { id: 'transparent', name: 'Průhledná', color: 'transparent' },
 ];
 
 const defaultConfig: AvatarConfig = {
+  style: 'avataaars',
   seed: '',
-  hair: 'short01',
-  hairColor: '6c4545',
-  skinColor: 'f2d3b1',
-  eyes: 'variant01',
-  mouth: 'happy01',
-  clothing: 'shirt01',
-  clothingColor: '6dbb58',
+  hair: 'shortFlat',
+  hairColor: 'a55728',
+  skinColor: 'edb98a',
   accessories: '',
   accessoriesColor: '4b4b4b',
+  facialHair: '',
+  facialHairColor: '2c1b18',
+  clothing: 'shirtCrewNeck',
+  clothingColor: '5199e4',
+  eyes: 'default',
+  eyebrows: 'default',
+  mouth: 'smile',
+  backgroundColor: 'b6e3f4',
 };
 
 export function AvatarBuilder() {
@@ -130,6 +198,7 @@ export function AvatarBuilder() {
   const [config, setConfig] = useState<AvatarConfig>(defaultConfig);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'hair' | 'face' | 'clothing' | 'extras'>('hair');
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -143,59 +212,67 @@ export function AvatarBuilder() {
       
       if (data?.avatar_config && typeof data.avatar_config === 'object') {
         const configData = data.avatar_config as Record<string, unknown>;
-        setConfig({ 
-          ...defaultConfig, 
-          seed: String(configData.seed || ''),
-          hair: String(configData.hair || defaultConfig.hair),
-          hairColor: String(configData.hairColor || defaultConfig.hairColor),
-          skinColor: String(configData.skinColor || defaultConfig.skinColor),
-          eyes: String(configData.eyes || defaultConfig.eyes),
-          mouth: String(configData.mouth || defaultConfig.mouth),
-          clothing: String(configData.clothing || defaultConfig.clothing),
-          clothingColor: String(configData.clothingColor || defaultConfig.clothingColor),
-          accessories: String(configData.accessories || ''),
-          accessoriesColor: String(configData.accessoriesColor || defaultConfig.accessoriesColor),
-        });
+        setConfig(prev => ({ 
+          ...prev,
+          ...Object.fromEntries(
+            Object.entries(configData).map(([k, v]) => [k, String(v ?? '')])
+          )
+        } as AvatarConfig));
       }
       setLoading(false);
     };
     fetchConfig();
   }, [user]);
 
-  const getAvatarUrl = (cfg: AvatarConfig) => {
-    const params = new URLSearchParams({
-      hair: cfg.hair,
-      hairColor: cfg.hairColor,
-      skinColor: cfg.skinColor,
-      eyes: cfg.eyes,
-      mouth: cfg.mouth,
-      clothing: cfg.clothing,
-      clothingColor: cfg.clothingColor,
-    });
+  const getAvatarUrl = (cfg: AvatarConfig, size = 200) => {
+    const params = new URLSearchParams();
+    params.set('seed', cfg.seed || user?.id || 'default');
+    params.set('top', cfg.hair);
+    params.set('hairColor', cfg.hairColor);
+    params.set('skinColor', cfg.skinColor);
+    params.set('eyes', cfg.eyes);
+    params.set('eyebrows', cfg.eyebrows);
+    params.set('mouth', cfg.mouth);
+    params.set('clothing', cfg.clothing);
+    params.set('clothingColor', cfg.clothingColor);
     
     if (cfg.accessories) {
       params.set('accessories', cfg.accessories);
-      params.set('accessoriesColor', cfg.accessoriesColor || '4b4b4b');
+      params.set('accessoriesColor', cfg.accessoriesColor);
     }
     
-    const seed = cfg.seed || user?.id || 'default';
-    return `https://api.dicebear.com/7.x/big-smile/svg?seed=${seed}&${params.toString()}`;
+    if (cfg.facialHair) {
+      params.set('facialHair', cfg.facialHair);
+      params.set('facialHairColor', cfg.facialHairColor);
+    }
+    
+    if (cfg.backgroundColor && cfg.backgroundColor !== 'transparent') {
+      params.set('backgroundColor', cfg.backgroundColor);
+    }
+    
+    return `https://api.dicebear.com/7.x/avataaars/svg?${params.toString()}&size=${size}`;
   };
 
   const handleRandomize = () => {
-    const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+    const randomChoice = <T extends { id: string }>(arr: T[]): string => 
+      arr[Math.floor(Math.random() * arr.length)].id;
     
     setConfig({
+      style: 'avataaars',
       seed: Math.random().toString(36).substring(7),
-      hair: randomChoice(HAIR_STYLES).id,
-      hairColor: randomChoice(HAIR_COLORS).id,
-      skinColor: randomChoice(SKIN_COLORS).id,
-      eyes: randomChoice(EYES).id,
-      mouth: randomChoice(MOUTHS).id,
-      clothing: randomChoice(CLOTHING).id,
-      clothingColor: randomChoice(CLOTHING_COLORS).id,
-      accessories: randomChoice(ACCESSORIES).id,
-      accessoriesColor: randomChoice(CLOTHING_COLORS).id,
+      hair: randomChoice(HAIR_STYLES),
+      hairColor: randomChoice(HAIR_COLORS),
+      skinColor: randomChoice(SKIN_COLORS),
+      eyes: randomChoice(EYES),
+      eyebrows: randomChoice(EYEBROWS),
+      mouth: randomChoice(MOUTH),
+      facialHair: Math.random() > 0.5 ? randomChoice(FACIAL_HAIR) : '',
+      facialHairColor: randomChoice(HAIR_COLORS),
+      accessories: Math.random() > 0.6 ? randomChoice(ACCESSORIES) : '',
+      accessoriesColor: '4b4b4b',
+      clothing: randomChoice(CLOTHING),
+      clothingColor: randomChoice(CLOTHING_COLORS),
+      backgroundColor: randomChoice(BACKGROUND_COLORS),
     });
   };
 
@@ -205,24 +282,10 @@ export function AvatarBuilder() {
 
     const avatarUrl = getAvatarUrl(config);
 
-    // Convert config to a plain object for JSON storage
-    const configForStorage = {
-      seed: config.seed,
-      hair: config.hair,
-      hairColor: config.hairColor,
-      skinColor: config.skinColor,
-      eyes: config.eyes,
-      mouth: config.mouth,
-      clothing: config.clothing,
-      clothingColor: config.clothingColor,
-      accessories: config.accessories,
-      accessoriesColor: config.accessoriesColor,
-    };
-
     const { error } = await supabase
       .from('profiles')
       .update({ 
-        avatar_config: configForStorage,
+        avatar_config: config as unknown as Record<string, string>,
         avatar_url: avatarUrl
       })
       .eq('user_id', user.id);
@@ -235,7 +298,7 @@ export function AvatarBuilder() {
       });
     } else {
       toast({
-        title: 'Uloženo!',
+        title: 'Uloženo! ✨',
         description: 'Tvůj avatar byl aktualizován.',
       });
     }
@@ -245,145 +308,270 @@ export function AvatarBuilder() {
   if (loading) {
     return (
       <Card>
-        <CardContent className="py-8 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+        <CardContent className="py-12 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
   }
 
-  const renderColorPicker = (
-    colors: { id: string; name: string }[],
-    selected: string,
-    onChange: (id: string) => void
-  ) => (
+  const ColorPicker = ({ 
+    colors, 
+    selected, 
+    onChange 
+  }: { 
+    colors: { id: string; name: string; color: string }[]; 
+    selected: string; 
+    onChange: (id: string) => void;
+  }) => (
     <div className="flex flex-wrap gap-2">
-      {colors.map((color) => (
+      {colors.map((c) => (
         <button
-          key={color.id}
-          onClick={() => onChange(color.id)}
-          className={`w-8 h-8 rounded-full border-2 transition-all ${
-            selected === color.id ? 'border-primary scale-110' : 'border-transparent hover:scale-105'
+          key={c.id}
+          onClick={() => onChange(c.id)}
+          title={c.name}
+          className={`w-9 h-9 rounded-full border-2 transition-all shadow-sm hover:scale-110 ${
+            selected === c.id 
+              ? 'border-primary ring-2 ring-primary/30 scale-110' 
+              : 'border-border hover:border-primary/50'
           }`}
-          style={{ backgroundColor: `#${color.id}` }}
-          title={color.name}
+          style={{ 
+            backgroundColor: c.color === 'transparent' ? 'transparent' : c.color,
+            backgroundImage: c.color === 'transparent' 
+              ? 'linear-gradient(45deg, hsl(var(--muted)) 25%, transparent 25%), linear-gradient(-45deg, hsl(var(--muted)) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, hsl(var(--muted)) 75%), linear-gradient(-45deg, transparent 75%, hsl(var(--muted)) 75%)'
+              : 'none',
+            backgroundSize: '8px 8px',
+            backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px'
+          }}
         />
       ))}
     </div>
   );
 
-  const renderOptionPicker = (
-    options: { id: string; name: string }[],
-    selected: string,
-    onChange: (id: string) => void
-  ) => (
-    <div className="flex flex-wrap gap-2">
-      {options.map((option) => (
+  const OptionGrid = ({ 
+    options, 
+    selected, 
+    onChange,
+    showPreview = false
+  }: { 
+    options: { id: string; name: string; emoji?: string }[];
+    selected: string;
+    onChange: (id: string) => void;
+    showPreview?: boolean;
+  }) => (
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+      {options.map((opt) => (
         <button
-          key={option.id}
-          onClick={() => onChange(option.id)}
-          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-            selected === option.id
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted hover:bg-muted/80'
+          key={opt.id || 'none'}
+          onClick={() => onChange(opt.id)}
+          className={`p-2 rounded-xl border-2 transition-all text-center ${
+            selected === opt.id
+              ? 'border-primary bg-primary/10 shadow-md'
+              : 'border-border bg-card hover:border-primary/50 hover:bg-muted/50'
           }`}
         >
-          {option.name}
+          {opt.emoji && <span className="text-xl block mb-1">{opt.emoji}</span>}
+          <span className="text-xs font-medium block truncate">{opt.name}</span>
         </button>
       ))}
     </div>
   );
 
+  const tabs = [
+    { id: 'hair' as const, label: 'Vlasy', icon: <Sparkles className="h-4 w-4" /> },
+    { id: 'face' as const, label: 'Obličej', icon: <User className="h-4 w-4" /> },
+    { id: 'clothing' as const, label: 'Oblečení', icon: <Shirt className="h-4 w-4" /> },
+    { id: 'extras' as const, label: 'Doplňky', icon: <Glasses className="h-4 w-4" /> },
+  ];
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Vytvoř si avatar</span>
+    <Card className="overflow-hidden">
+      <CardHeader className="border-b bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <span className="text-2xl">🎨</span>
+              Vytvoř si avatar
+            </CardTitle>
+            <CardDescription>Přizpůsob si svůj jedinečný vzhled</CardDescription>
+          </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleRandomize}>
-              <Shuffle className="h-4 w-4 mr-2" />
-              Náhodný
+            <Button variant="outline" size="sm" onClick={handleRandomize} className="gap-2">
+              <Shuffle className="h-4 w-4" />
+              <span className="hidden sm:inline">Náhodný</span>
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-              Uložit
+            <Button size="sm" onClick={handleSave} disabled={saving} className="gap-2">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              <span className="hidden sm:inline">Uložit</span>
             </Button>
           </div>
-        </CardTitle>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Avatar Preview */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-48 h-48 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 p-2">
+      
+      <CardContent className="p-0">
+        <div className="grid grid-cols-1 lg:grid-cols-5">
+          {/* Avatar Preview - Sticky on large screens */}
+          <div className="lg:col-span-2 p-6 flex flex-col items-center justify-center bg-gradient-to-br from-muted/50 to-background border-b lg:border-b-0 lg:border-r">
+            <div 
+              className="w-40 h-40 lg:w-56 lg:h-56 rounded-full overflow-hidden shadow-xl ring-4 ring-background"
+              style={{ 
+                backgroundColor: config.backgroundColor === 'transparent' 
+                  ? 'hsl(var(--muted))' 
+                  : `#${config.backgroundColor}`
+              }}
+            >
               <img
-                src={getAvatarUrl(config)}
+                src={getAvatarUrl(config, 256)}
                 alt="Avatar preview"
-                className="w-full h-full rounded-full"
+                className="w-full h-full"
               />
             </div>
-            <p className="text-sm text-muted-foreground">Náhled avataru</p>
+            <p className="text-sm text-muted-foreground mt-4">Náhled avataru</p>
           </div>
 
           {/* Customization Options */}
-          <Tabs defaultValue="hair" className="w-full">
-            <TabsList className="grid grid-cols-4 mb-4">
-              <TabsTrigger value="hair">Vlasy</TabsTrigger>
-              <TabsTrigger value="face">Obličej</TabsTrigger>
-              <TabsTrigger value="clothing">Oblečení</TabsTrigger>
-              <TabsTrigger value="accessories">Doplňky</TabsTrigger>
-            </TabsList>
+          <div className="lg:col-span-3 flex flex-col">
+            {/* Tab Navigation */}
+            <div className="flex border-b bg-muted/30">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all ${
+                    activeTab === tab.id
+                      ? 'text-primary border-b-2 border-primary bg-background'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}
+                >
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
+            </div>
 
-            <TabsContent value="hair" className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Styl vlasů</Label>
-                {renderOptionPicker(HAIR_STYLES, config.hair, (id) => setConfig({ ...config, hair: id }))}
-              </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Barva vlasů</Label>
-                {renderColorPicker(HAIR_COLORS, config.hairColor, (id) => setConfig({ ...config, hairColor: id }))}
-              </div>
-            </TabsContent>
+            {/* Tab Content */}
+            <ScrollArea className="h-[400px]">
+              <div className="p-4 space-y-5">
+                {activeTab === 'hair' && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Účes</Label>
+                      <OptionGrid 
+                        options={HAIR_STYLES} 
+                        selected={config.hair} 
+                        onChange={(id) => setConfig(c => ({ ...c, hair: id }))} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Barva vlasů</Label>
+                      <ColorPicker 
+                        colors={HAIR_COLORS} 
+                        selected={config.hairColor} 
+                        onChange={(id) => setConfig(c => ({ ...c, hairColor: id }))} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Vousy</Label>
+                      <OptionGrid 
+                        options={FACIAL_HAIR} 
+                        selected={config.facialHair} 
+                        onChange={(id) => setConfig(c => ({ ...c, facialHair: id }))} 
+                      />
+                    </div>
+                    {config.facialHair && (
+                      <div>
+                        <Label className="text-sm font-semibold mb-3 block">Barva vousů</Label>
+                        <ColorPicker 
+                          colors={HAIR_COLORS} 
+                          selected={config.facialHairColor} 
+                          onChange={(id) => setConfig(c => ({ ...c, facialHairColor: id }))} 
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
 
-            <TabsContent value="face" className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Barva pleti</Label>
-                {renderColorPicker(SKIN_COLORS, config.skinColor, (id) => setConfig({ ...config, skinColor: id }))}
-              </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Oči</Label>
-                {renderOptionPicker(EYES, config.eyes, (id) => setConfig({ ...config, eyes: id }))}
-              </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Ústa</Label>
-                {renderOptionPicker(MOUTHS, config.mouth, (id) => setConfig({ ...config, mouth: id }))}
-              </div>
-            </TabsContent>
+                {activeTab === 'face' && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Barva pleti</Label>
+                      <ColorPicker 
+                        colors={SKIN_COLORS} 
+                        selected={config.skinColor} 
+                        onChange={(id) => setConfig(c => ({ ...c, skinColor: id }))} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Oči</Label>
+                      <OptionGrid 
+                        options={EYES} 
+                        selected={config.eyes} 
+                        onChange={(id) => setConfig(c => ({ ...c, eyes: id }))} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Obočí</Label>
+                      <OptionGrid 
+                        options={EYEBROWS} 
+                        selected={config.eyebrows} 
+                        onChange={(id) => setConfig(c => ({ ...c, eyebrows: id }))} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Ústa</Label>
+                      <OptionGrid 
+                        options={MOUTH} 
+                        selected={config.mouth} 
+                        onChange={(id) => setConfig(c => ({ ...c, mouth: id }))} 
+                      />
+                    </div>
+                  </>
+                )}
 
-            <TabsContent value="clothing" className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Typ oblečení</Label>
-                {renderOptionPicker(CLOTHING, config.clothing, (id) => setConfig({ ...config, clothing: id }))}
-              </div>
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Barva oblečení</Label>
-                {renderColorPicker(CLOTHING_COLORS, config.clothingColor, (id) => setConfig({ ...config, clothingColor: id }))}
-              </div>
-            </TabsContent>
+                {activeTab === 'clothing' && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Typ oblečení</Label>
+                      <OptionGrid 
+                        options={CLOTHING} 
+                        selected={config.clothing} 
+                        onChange={(id) => setConfig(c => ({ ...c, clothing: id }))} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Barva oblečení</Label>
+                      <ColorPicker 
+                        colors={CLOTHING_COLORS} 
+                        selected={config.clothingColor} 
+                        onChange={(id) => setConfig(c => ({ ...c, clothingColor: id }))} 
+                      />
+                    </div>
+                  </>
+                )}
 
-            <TabsContent value="accessories" className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Doplňky</Label>
-                {renderOptionPicker(ACCESSORIES, config.accessories || '', (id) => setConfig({ ...config, accessories: id }))}
+                {activeTab === 'extras' && (
+                  <>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Doplňky</Label>
+                      <OptionGrid 
+                        options={ACCESSORIES} 
+                        selected={config.accessories} 
+                        onChange={(id) => setConfig(c => ({ ...c, accessories: id }))} 
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-3 block">Barva pozadí</Label>
+                      <ColorPicker 
+                        colors={BACKGROUND_COLORS} 
+                        selected={config.backgroundColor} 
+                        onChange={(id) => setConfig(c => ({ ...c, backgroundColor: id }))} 
+                      />
+                    </div>
+                  </>
+                )}
               </div>
-              {config.accessories && (
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Barva doplňků</Label>
-                  {renderColorPicker(CLOTHING_COLORS, config.accessoriesColor || '4b4b4b', (id) => setConfig({ ...config, accessoriesColor: id }))}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+            </ScrollArea>
+          </div>
         </div>
       </CardContent>
     </Card>
