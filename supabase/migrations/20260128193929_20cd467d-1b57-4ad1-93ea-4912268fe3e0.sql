@@ -1,0 +1,36 @@
+-- Fix security issue: Profiles should only be viewable by authenticated users
+DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
+
+CREATE POLICY "Profiles are viewable by authenticated users"
+ON public.profiles
+FOR SELECT
+TO authenticated
+USING (true);
+
+-- Add story_views table to track who has seen stories
+CREATE TABLE IF NOT EXISTS public.story_views (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  story_id uuid NOT NULL REFERENCES public.stories(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
+  viewed_at timestamp with time zone NOT NULL DEFAULT now(),
+  UNIQUE(story_id, user_id)
+);
+
+-- Enable RLS on story_views
+ALTER TABLE public.story_views ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for story_views
+CREATE POLICY "Users can view their own story views"
+ON public.story_views
+FOR SELECT
+TO authenticated
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert story views"
+ON public.story_views
+FOR INSERT
+TO authenticated
+WITH CHECK (auth.uid() = user_id);
+
+-- Enable realtime for stories
+ALTER PUBLICATION supabase_realtime ADD TABLE public.stories;
