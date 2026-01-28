@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, MapPin, Link as LinkIcon, Calendar } from 'lucide-react';
+import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 
@@ -27,9 +27,11 @@ interface Profile {
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   // Edit form state
@@ -60,6 +62,76 @@ const Profile = () => {
 
     fetchProfile();
   }, [user]);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Chyba',
+        description: 'Vyberte prosím obrázek.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Chyba',
+        description: 'Obrázek je příliš velký. Maximum je 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      const newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: newAvatarUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: newAvatarUrl } : null);
+      
+      toast({
+        title: 'Úspěch',
+        description: 'Profilový obrázek byl aktualizován.',
+      });
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: 'Chyba',
+        description: 'Nepodařilo se nahrát obrázek.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -111,30 +183,73 @@ const Profile = () => {
       <Sidebar currentProfile={profile} />
       
       <main className="ml-64 mr-80 py-6 px-8">
-        <div className="max-w-2xl mx-auto">
-          <Card>
-            <CardHeader className="flex flex-row items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile?.avatar_url || ''} />
-                <AvatarFallback className="text-2xl">{profile?.full_name?.[0] || 'U'}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
+        <div className="max-w-2xl mx-auto space-y-6">
+          {/* Profile Header Card */}
+          <Card className="overflow-hidden">
+            {/* Cover Image */}
+            <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
+            
+            <CardHeader className="relative pt-0">
+              {/* Avatar with upload */}
+              <div className="absolute -top-16 left-6">
+                <div className="relative group">
+                  <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                    <AvatarImage src={profile?.avatar_url || ''} />
+                    <AvatarFallback className="text-4xl bg-primary/10">
+                      {profile?.full_name?.[0] || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {/* Upload overlay */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-8 w-8 text-white animate-spin" />
+                    ) : (
+                      <Camera className="h-8 w-8 text-white" />
+                    )}
+                  </button>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Edit button */}
+              <div className="flex justify-end pt-2">
+                {!isEditing && (
+                  <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Upravit profil
+                  </Button>
+                )}
+              </div>
+
+              {/* Name and username */}
+              <div className="mt-12">
                 <CardTitle className="text-2xl">{profile?.full_name}</CardTitle>
                 <p className="text-muted-foreground">@{profile?.username}</p>
               </div>
-              {!isEditing && (
-                <Button onClick={() => setIsEditing(true)}>Upravit profil</Button>
-              )}
             </CardHeader>
+
             <CardContent className="space-y-6">
               {isEditing ? (
-                <div className="space-y-4">
+                <div className="space-y-4 bg-muted/30 p-4 rounded-lg">
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Celé jméno</Label>
                     <Input
                       id="fullName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Vaše celé jméno"
                     />
                   </div>
                   <div className="space-y-2">
@@ -144,32 +259,36 @@ const Profile = () => {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       placeholder="Napiš něco o sobě..."
+                      rows={3}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Lokace</Label>
-                    <Input
-                      id="location"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Praha, Česká republika"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="location">Lokace</Label>
+                      <Input
+                        id="location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="Praha, Česká republika"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="website">Web</Label>
+                      <Input
+                        id="website"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        placeholder="https://example.com"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="website">Web</Label>
-                    <Input
-                      id="website"
-                      value={website}
-                      onChange={(e) => setWebsite(e.target.value)}
-                      placeholder="https://example.com"
-                    />
-                  </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-2">
                     <Button onClick={handleSave} disabled={saving}>
                       {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                      Uložit
+                      Uložit změny
                     </Button>
                     <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      <X className="h-4 w-4 mr-2" />
                       Zrušit
                     </Button>
                   </div>
@@ -177,35 +296,65 @@ const Profile = () => {
               ) : (
                 <div className="space-y-4">
                   {profile?.bio && (
-                    <p className="text-foreground">{profile.bio}</p>
+                    <p className="text-foreground leading-relaxed">{profile.bio}</p>
                   )}
+                  
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     {profile?.location && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <MapPin className="h-4 w-4" />
-                        {profile.location}
+                        <span>{profile.location}</span>
                       </div>
                     )}
                     {profile?.website && (
                       <a
-                        href={profile.website}
+                        href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-primary hover:underline"
+                        className="flex items-center gap-1.5 text-primary hover:underline"
                       >
                         <LinkIcon className="h-4 w-4" />
-                        {profile.website}
+                        <span>{profile.website.replace(/^https?:\/\//, '')}</span>
                       </a>
                     )}
                     {profile?.created_at && (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <Calendar className="h-4 w-4" />
-                        Členem od {format(new Date(profile.created_at), 'MMMM yyyy', { locale: cs })}
+                        <span>Členem od {format(new Date(profile.created_at), 'MMMM yyyy', { locale: cs })}</span>
                       </div>
                     )}
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Stats Card */}
+          <Card>
+            <CardContent className="py-4">
+              <div className="grid grid-cols-3 divide-x divide-border">
+                <div className="text-center px-4">
+                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-sm text-muted-foreground">Příspěvků</p>
+                </div>
+                <div className="text-center px-4">
+                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-sm text-muted-foreground">Přátel</p>
+                </div>
+                <div className="text-center px-4">
+                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-sm text-muted-foreground">Sledujících</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Activity hint */}
+          <Card>
+            <CardContent className="py-8 text-center">
+              <p className="text-muted-foreground">
+                Vaše příspěvky se zobrazí zde
+              </p>
             </CardContent>
           </Card>
         </div>
