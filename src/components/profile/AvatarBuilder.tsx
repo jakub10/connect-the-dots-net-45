@@ -228,36 +228,31 @@ export function AvatarBuilder() {
     const params = new URLSearchParams();
     params.set('seed', cfg.seed || user?.id || 'default');
     
-    // Hair (topType in avataaars)
+    // Hair - DiceBear v7.x avataaars parameters
     params.set('top', cfg.hair);
-    params.set('hatColor', cfg.hairColor);
     params.set('hairColor', cfg.hairColor);
     
     // Skin
     params.set('skinColor', cfg.skinColor);
     
-    // Face
-    params.set('eyeType', cfg.eyes);
-    params.set('eyebrowType', cfg.eyebrows);
-    params.set('mouthType', cfg.mouth);
+    // Face - use correct v7.x parameter names
+    params.set('eyes', cfg.eyes);
+    params.set('eyebrows', cfg.eyebrows);
+    params.set('mouth', cfg.mouth);
     
-    // Clothing - use clotheType and clotheColor for avataaars
-    params.set('clotheType', cfg.clothing);
-    params.set('clotheColor', cfg.clothingColor);
+    // Clothing - correct v7.x parameters
+    params.set('clothing', cfg.clothing);
+    params.set('clothingColor', cfg.clothingColor);
     
-    // Accessories
+    // Accessories - omit if empty
     if (cfg.accessories) {
-      params.set('accessoriesType', cfg.accessories);
-    } else {
-      params.set('accessoriesType', 'blank');
+      params.set('accessories', cfg.accessories);
     }
     
-    // Facial hair - use facialHairType for avataaars
+    // Facial hair - omit if empty
     if (cfg.facialHair) {
-      params.set('facialHairType', cfg.facialHair);
+      params.set('facialHair', cfg.facialHair);
       params.set('facialHairColor', cfg.facialHairColor);
-    } else {
-      params.set('facialHairType', 'blank');
     }
     
     // Background
