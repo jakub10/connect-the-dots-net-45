@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
 import { RightSidebar } from '@/components/social/RightSidebar';
+import { MobileNav } from '@/components/social/MobileNav';
+import { MobileHeader } from '@/components/social/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -124,9 +126,10 @@ const Settings = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader currentProfile={currentProfile} />
       <Sidebar currentProfile={currentProfile} />
       
-      <main className="ml-64 mr-80 py-6 px-8">
+      <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
         <div className="max-w-2xl mx-auto space-y-6">
           <h1 className="text-3xl font-bold">Nastavení</h1>
 
@@ -266,6 +269,7 @@ const Settings = () => {
       </main>
 
       <RightSidebar />
+      <MobileNav />
     </div>
   );
 };

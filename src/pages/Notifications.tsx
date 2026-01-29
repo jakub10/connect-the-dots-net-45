@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
 import { RightSidebar } from '@/components/social/RightSidebar';
+import { MobileNav } from '@/components/social/MobileNav';
+import { MobileHeader } from '@/components/social/MobileHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, Bell, Heart, MessageCircle, UserPlus, Check } from 'lucide-react';
@@ -173,11 +175,12 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader currentProfile={currentProfile} />
       <Sidebar currentProfile={currentProfile} />
       
-      <main className="ml-64 mr-80 py-6 px-8">
+      <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <Bell className="h-8 w-8 text-primary" />
               <h1 className="text-3xl font-bold">Oznámení</h1>
@@ -250,6 +253,7 @@ const Notifications = () => {
       </main>
 
       <RightSidebar />
+      <MobileNav />
     </div>
   );
 };

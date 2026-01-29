@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
 import { RightSidebar } from '@/components/social/RightSidebar';
+import { MobileNav } from '@/components/social/MobileNav';
+import { MobileHeader } from '@/components/social/MobileHeader';
 import { PostCard } from '@/components/social/PostCard';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -153,9 +155,10 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader currentProfile={currentProfile} />
       <Sidebar currentProfile={currentProfile} />
       
-      <main className="ml-64 mr-80 py-6 px-8">
+      <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
         <div className="max-w-2xl mx-auto">
           <div className="mb-6">
             <div className="relative">
@@ -244,6 +247,7 @@ const Search = () => {
       </main>
 
       <RightSidebar />
+      <MobileNav />
     </div>
   );
 };
