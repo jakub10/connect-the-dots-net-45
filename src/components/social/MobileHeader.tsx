@@ -23,8 +23,8 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
   const { signOut } = useAuth();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-border md:hidden">
-      <div className="flex items-center justify-between h-14 px-4">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border md:hidden safe-area-top">
+      <div className="flex items-center justify-between h-14 px-4 pt-safe">
         <Link to="/">
           <h1 className="text-xl font-bold gradient-text">SocialConnect</h1>
         </Link>
