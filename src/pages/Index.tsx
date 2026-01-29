@@ -132,7 +132,7 @@ const Index = () => {
       <Sidebar currentProfile={currentProfile} />
       
       {/* Main Content */}
-      <main className="pt-14 pb-16 md:pt-0 md:pb-0 md:ml-64 lg:mr-80 py-6 px-4 md:px-8">
+      <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
         <div className="max-w-2xl mx-auto">
           <Feed currentProfile={currentProfile} />
         </div>
