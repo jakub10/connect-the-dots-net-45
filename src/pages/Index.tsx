@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
 import { Feed } from '@/components/social/Feed';
 import { RightSidebar } from '@/components/social/RightSidebar';
+import { MobileNav } from '@/components/social/MobileNav';
+import { MobileHeader } from '@/components/social/MobileHeader';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
@@ -123,15 +125,24 @@ const Index = () => {
   // Main app for authenticated users
   return (
     <div className="min-h-screen bg-background">
+      {/* Mobile Header */}
+      <MobileHeader currentProfile={currentProfile} />
+      
+      {/* Desktop Sidebar */}
       <Sidebar currentProfile={currentProfile} />
       
-      <main className="ml-64 mr-80 py-6 px-8">
+      {/* Main Content */}
+      <main className="pt-14 pb-16 md:pt-0 md:pb-0 md:ml-64 lg:mr-80 py-6 px-4 md:px-8">
         <div className="max-w-2xl mx-auto">
           <Feed currentProfile={currentProfile} />
         </div>
       </main>
 
+      {/* Desktop Right Sidebar */}
       <RightSidebar />
+      
+      {/* Mobile Bottom Navigation */}
+      <MobileNav />
     </div>
   );
 };

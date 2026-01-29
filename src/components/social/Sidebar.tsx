@@ -27,7 +27,7 @@ export function Sidebar({ currentProfile }: SidebarProps) {
   const location = useLocation();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-card border-r border-border flex flex-col">
+    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-card border-r border-border flex-col">
       {/* Logo */}
       <div className="p-6">
         <Link to="/">
