@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
 import { RightSidebar } from '@/components/social/RightSidebar';
+import { MobileNav } from '@/components/social/MobileNav';
+import { MobileHeader } from '@/components/social/MobileHeader';
 import { PostCard } from '@/components/social/PostCard';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -222,13 +224,15 @@ const UserProfile = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
+        <MobileHeader currentProfile={currentProfile} />
         <Sidebar currentProfile={currentProfile} />
-        <main className="ml-64 mr-80 py-6 px-8">
+        <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         </main>
         <RightSidebar />
+        <MobileNav />
       </div>
     );
   }
@@ -236,13 +240,15 @@ const UserProfile = () => {
   if (!profile) {
     return (
       <div className="min-h-screen bg-background">
+        <MobileHeader currentProfile={currentProfile} />
         <Sidebar currentProfile={currentProfile} />
-        <main className="ml-64 mr-80 py-6 px-8">
+        <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
           <div className="max-w-2xl mx-auto text-center py-12">
             <p className="text-muted-foreground">Uživatel nenalezen</p>
           </div>
         </main>
         <RightSidebar />
+        <MobileNav />
       </div>
     );
   }
@@ -251,9 +257,10 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader currentProfile={currentProfile} />
       <Sidebar currentProfile={currentProfile} />
       
-      <main className="ml-64 mr-80 py-6 px-8">
+      <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Profile Card */}
           <Card className="overflow-hidden">
@@ -390,6 +397,7 @@ const UserProfile = () => {
       </main>
 
       <RightSidebar />
+      <MobileNav />
     </div>
   );
 };

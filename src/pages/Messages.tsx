@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Sidebar } from '@/components/social/Sidebar';
+import { MobileNav } from '@/components/social/MobileNav';
+import { MobileHeader } from '@/components/social/MobileHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -382,12 +384,13 @@ const Messages = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <MobileHeader currentProfile={currentProfile} />
       <Sidebar currentProfile={currentProfile} />
       
-      <main className="ml-64 py-0 px-0 h-screen">
+      <main className="pt-14 pb-16 md:pt-0 md:pb-0 md:ml-64 h-screen">
         <div className="flex h-full">
           {/* Conversations list */}
-          <div className="w-80 border-r border-border flex flex-col bg-card">
+          <div className={`${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 border-r border-border flex-col bg-card`}>
             <div className="p-4 border-b border-border">
               <h1 className="text-xl font-bold mb-4">Zprávy</h1>
               <div className="relative">
@@ -470,7 +473,7 @@ const Messages = () => {
           </div>
 
           {/* Chat area */}
-          <div className="flex-1 flex flex-col">
+          <div className={`${selectedConversation ? 'flex' : 'hidden md:flex'} flex-1 flex-col`}>
             {selectedConversation ? (
               <>
                 {/* Chat header */}
@@ -478,7 +481,7 @@ const Messages = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="md:hidden"
+                    className="md:hidden shrink-0"
                     onClick={() => setSelectedConversation(null)}
                   >
                     <ArrowLeft className="h-5 w-5" />
@@ -608,6 +611,7 @@ const Messages = () => {
           </div>
         </div>
       </main>
+      <MobileNav />
     </div>
   );
 };
