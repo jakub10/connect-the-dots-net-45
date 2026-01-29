@@ -55,19 +55,19 @@ export function StoryUpload({ onStoryCreated }: StoryUploadProps) {
 
     setIsUploading(true);
     try {
-      // Upload image to storage
+      // Upload image to storage - path must match RLS policy: stories/{user_id}/filename
       const fileExt = selectedImage.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `stories/${user.id}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('posts')
-        .upload(`stories/${fileName}`, selectedImage);
+        .upload(fileName, selectedImage);
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
         .from('posts')
-        .getPublicUrl(`stories/${fileName}`);
+        .getPublicUrl(fileName);
 
       // Create story record
       const { error: insertError } = await supabase
