@@ -18,7 +18,7 @@ const trendingTopics = [
 
 export function RightSidebar() {
   return (
-    <aside className="fixed right-0 top-0 h-screen w-80 bg-card border-l border-border p-4 overflow-y-auto">
+    <aside className="hidden lg:block fixed right-0 top-0 h-screen w-80 bg-card border-l border-border p-4 overflow-y-auto">
       {/* Search */}
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
