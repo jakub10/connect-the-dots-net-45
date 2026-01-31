@@ -117,11 +117,11 @@ export function AIChatbot() {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform",
+          "fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform",
           isOpen && "hidden"
         )}
       >
-        <Bot className="h-6 w-6" />
+        <Bot className="h-8 w-8" />
       </button>
 
       {/* Chat Window */}
