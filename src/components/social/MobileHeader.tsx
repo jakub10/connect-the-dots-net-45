@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import logo from '@/assets/logo.jpg';
 
 interface MobileHeaderProps {
   currentProfile?: {
@@ -25,8 +26,9 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border md:hidden safe-area-top">
       <div className="flex items-center justify-between h-14 px-4 pt-safe">
-        <Link to="/">
-          <h1 className="text-xl font-bold gradient-text">SocialConnect</h1>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logo} alt="Kamosféra" className="h-8 w-8 rounded-lg" />
+          <h1 className="text-lg font-bold gradient-text">Kamosféra</h1>
         </Link>
 
         <DropdownMenu>

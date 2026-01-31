@@ -73,7 +73,7 @@ export function RightSidebar() {
 
       {/* Footer */}
       <div className="mt-6 text-xs text-muted-foreground">
-        <p>© 2024 SocialConnect</p>
+        <p>© 2024 Kamosféra</p>
         <p className="mt-1">Podmínky · Soukromí · Cookies</p>
       </div>
     </aside>
