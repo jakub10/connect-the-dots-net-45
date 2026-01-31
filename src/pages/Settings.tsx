@@ -281,27 +281,27 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          {/* Chatbot API */}
+          {/* Grok API */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
-                Chatbot API
+                Grok API (xAI)
               </CardTitle>
-              <CardDescription>Nastav API klíč pro chatbota</CardDescription>
+              <CardDescription>Nastav API klíč pro Grok chatbota</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="chatbot-api">API klíč</Label>
+                <Label htmlFor="grok-api">Grok API klíč</Label>
                 <Input
-                  id="chatbot-api"
+                  id="grok-api"
                   type="password"
                   value={chatbotApiKey}
                   onChange={(e) => setChatbotApiKey(e.target.value)}
-                  placeholder="Zadej API klíč chatbota"
+                  placeholder="xai-xxxxxxxxxxxxxxxxxxxxxxxx"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Zadej API klíč pro aktivaci chatbota v aplikaci
+                  Získej API klíč na <a href="https://console.x.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">console.x.ai</a>
                 </p>
               </div>
               <Button 
