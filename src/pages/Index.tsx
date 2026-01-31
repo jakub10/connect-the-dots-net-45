@@ -9,6 +9,7 @@ import { MobileHeader } from '@/components/social/MobileHeader';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import logo from '@/assets/logo.jpg';
 
 interface Profile {
   username: string;
@@ -56,12 +57,14 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
           <div className="relative container mx-auto px-4 py-20 lg:py-32">
             <div className="max-w-3xl mx-auto text-center">
-              <h1 className="text-5xl lg:text-7xl font-bold mb-6">
-                <span className="gradient-text">SocialConnect</span>
+              <img src={logo} alt="Kamosféra" className="w-32 h-32 mx-auto mb-6 rounded-3xl shadow-2xl" />
+              <h1 className="text-5xl lg:text-7xl font-bold mb-4">
+                <span className="gradient-text">Kamosféra</span>
               </h1>
+              <p className="text-lg text-primary/80 mb-2">Detská sociálna sieť</p>
               <p className="text-xl lg:text-2xl text-muted-foreground mb-8">
-                Připoj se k milionům lidí, kteří sdílejí své myšlenky, 
-                navazují přátelství a objevují nové příležitosti.
+                Bezpečné místo pro děti, kde mohou sdílet, 
+                navazovat přátelství a objevovat nové věci.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button

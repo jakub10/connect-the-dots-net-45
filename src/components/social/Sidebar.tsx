@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import logo from '@/assets/logo.jpg';
 
 interface SidebarProps {
   currentProfile?: {
@@ -29,9 +30,10 @@ export function Sidebar({ currentProfile }: SidebarProps) {
   return (
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-card border-r border-border flex-col">
       {/* Logo */}
-      <div className="p-6">
-        <Link to="/">
-          <h1 className="text-2xl font-bold gradient-text">SocialConnect</h1>
+      <div className="p-4">
+        <Link to="/" className="flex items-center gap-3">
+          <img src={logo} alt="Kamosféra" className="h-10 w-10 rounded-xl" />
+          <h1 className="text-xl font-bold gradient-text">Kamosféra</h1>
         </Link>
       </div>
 

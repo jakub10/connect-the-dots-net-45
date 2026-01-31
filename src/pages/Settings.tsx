@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Moon, Shield, LogOut, Lock, Palette } from 'lucide-react';
+import { Bell, Moon, Shield, LogOut, Lock, Bot } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { AvatarBuilder } from '@/components/profile/AvatarBuilder';
@@ -38,6 +38,8 @@ const Settings = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+  const [chatbotApiKey, setChatbotApiKey] = useState('');
+  const [savingApiKey, setSavingApiKey] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -123,6 +125,35 @@ const Settings = () => {
     }
     setChangingPassword(false);
   };
+
+  const handleSaveApiKey = async () => {
+    if (!chatbotApiKey.trim()) {
+      toast({
+        title: 'Chyba',
+        description: 'API klíč nemůže být prázdný.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSavingApiKey(true);
+    // Uložíme API klíč do localStorage (v budoucnu lze přesunout do Supabase)
+    localStorage.setItem('chatbot_api_key', chatbotApiKey);
+    
+    toast({
+      title: 'Úspěch',
+      description: 'API klíč chatbota byl uložen.',
+    });
+    setSavingApiKey(false);
+  };
+
+  // Načtení API klíče při startu
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('chatbot_api_key');
+    if (savedApiKey) {
+      setChatbotApiKey(savedApiKey);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -246,6 +277,38 @@ const Settings = () => {
                 disabled={changingPassword || !newPassword || !confirmPassword}
               >
                 {changingPassword ? 'Měním heslo...' : 'Změnit heslo'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Chatbot API */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5" />
+                Chatbot API
+              </CardTitle>
+              <CardDescription>Nastav API klíč pro chatbota</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="chatbot-api">API klíč</Label>
+                <Input
+                  id="chatbot-api"
+                  type="password"
+                  value={chatbotApiKey}
+                  onChange={(e) => setChatbotApiKey(e.target.value)}
+                  placeholder="Zadej API klíč chatbota"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Zadej API klíč pro aktivaci chatbota v aplikaci
+                </p>
+              </div>
+              <Button 
+                onClick={handleSaveApiKey} 
+                disabled={savingApiKey || !chatbotApiKey.trim()}
+              >
+                {savingApiKey ? 'Ukládám...' : 'Uložit API klíč'}
               </Button>
             </CardContent>
           </Card>
