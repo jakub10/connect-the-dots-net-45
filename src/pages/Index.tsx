@@ -58,11 +58,11 @@ const Index = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
           <div className="relative container mx-auto px-4 py-20 lg:py-32">
             <div className="max-w-3xl mx-auto text-center">
-              <img src={logo} alt="Kamosféra" className="w-32 h-32 mx-auto mb-6 rounded-3xl shadow-2xl" />
+              <img src={logo} alt="Kamosféra" className="w-40 h-40 mx-auto mb-6 rounded-3xl shadow-2xl" />
               <h1 className="text-5xl lg:text-7xl font-bold mb-4">
                 <span className="gradient-text">Kamosféra</span>
               </h1>
-              <p className="text-lg text-primary/80 mb-2">Detská sociálna sieť</p>
+              <p className="text-lg text-primary/80 mb-2">Dětská sociální síť</p>
               <p className="text-xl lg:text-2xl text-muted-foreground mb-8">
                 Bezpečné místo pro děti, kde mohou sdílet, 
                 navazovat přátelství a objevovat nové věci.
