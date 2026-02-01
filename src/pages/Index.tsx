@@ -7,7 +7,7 @@ import { RightSidebar } from '@/components/social/RightSidebar';
 import { MobileNav } from '@/components/social/MobileNav';
 import { MobileHeader } from '@/components/social/MobileHeader';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { AIChatbot } from '@/components/chat/AIChatbot';
+import { FloatingGameMenu } from '@/components/games/FloatingGameMenu';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import logo from '@/assets/logo.jpg';
@@ -148,8 +148,8 @@ const Index = () => {
       {/* Mobile Bottom Navigation */}
       <MobileNav />
 
-      {/* AI Chatbot */}
-      <AIChatbot />
+      {/* Floating Game Menu */}
+      <FloatingGameMenu />
     </div>
   );
 };

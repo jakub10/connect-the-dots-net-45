@@ -127,6 +127,30 @@ export type Database = {
         }
         Relationships: []
       }
+      game_scores: {
+        Row: {
+          created_at: string
+          game_type: string
+          id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_type: string
+          id?: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          game_type?: string
+          id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       likes: {
         Row: {
           created_at: string
@@ -414,6 +438,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_game_stats: {
+        Row: {
+          clicker_best: number
+          memory_best: number
+          snake_best: number
+          tower_defense_best: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clicker_best?: number
+          memory_best?: number
+          snake_best?: number
+          tower_defense_best?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clicker_best?: number
+          memory_best?: number
+          snake_best?: number
+          tower_defense_best?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_presence: {
         Row: {
