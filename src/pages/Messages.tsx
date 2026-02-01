@@ -439,35 +439,41 @@ const Messages = () => {
                   <p className="text-sm">Vyhledej uživatele a zahaj konverzaci</p>
                 </div>
               ) : (
-                conversations.map(conv => (
-                  <div
-                    key={conv.id}
-                    className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-accent transition-colors ${
-                      selectedConversation?.id === conv.id ? 'bg-accent' : ''
-                    }`}
-                    onClick={() => setSelectedConversation(conv)}
-                  >
-                    <div className="relative">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={conv.other_profile?.avatar_url || ''} />
-                        <AvatarFallback>{conv.other_profile?.full_name?.[0] || '?'}</AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium truncate">{conv.other_profile?.full_name}</p>
-                        {conv.unread_count ? (
-                          <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
-                            {conv.unread_count}
-                          </span>
-                        ) : null}
+              conversations.map(conv => {
+                  const isSelected = selectedConversation?.id === conv.id;
+                  // Hide unread count if this conversation is currently selected
+                  const displayUnread = !isSelected && conv.unread_count ? conv.unread_count : 0;
+                  
+                  return (
+                    <div
+                      key={conv.id}
+                      className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-accent transition-colors ${
+                        isSelected ? 'bg-accent' : ''
+                      }`}
+                      onClick={() => setSelectedConversation(conv)}
+                    >
+                      <div className="relative">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={conv.other_profile?.avatar_url || ''} />
+                          <AvatarFallback>{conv.other_profile?.full_name?.[0] || '?'}</AvatarFallback>
+                        </Avatar>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true, locale: cs })}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium truncate">{conv.other_profile?.full_name}</p>
+                          {displayUnread > 0 && (
+                            <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                              {displayUnread}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true, locale: cs })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </ScrollArea>
           </div>
