@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Trophy, RotateCcw } from 'lucide-react';
+import { X, Trophy, RotateCcw, Clock, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +17,19 @@ interface Card {
   isMatched: boolean;
 }
 
-const EMOJIS = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
+type Difficulty = 'easy' | 'medium' | 'hard';
+
+const EMOJI_SETS = {
+  animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🦁', '🐯', '🐮'],
+  food: ['🍎', '🍕', '🍔', '🍟', '🌮', '🍣', '🍩', '🍪', '🧁', '🍫', '🍿', '🥤'],
+  sports: ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🎱', '🏓', '🥊', '🏆', '🎯', '🎮'],
+};
+
+const DIFFICULTIES: Record<Difficulty, { pairs: number; cols: number; timeBonus: number }> = {
+  easy: { pairs: 6, cols: 4, timeBonus: 50 },
+  medium: { pairs: 8, cols: 4, timeBonus: 100 },
+  hard: { pairs: 12, cols: 6, timeBonus: 200 },
+};
 
 export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
   const { user } = useAuth();
@@ -29,13 +41,26 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
   const [highScore, setHighScore] = useState(0);
   const [isChecking, setIsChecking] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const [emojiSet, setEmojiSet] = useState<keyof typeof EMOJI_SETS>('animals');
+  const [timer, setTimer] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [combo, setCombo] = useState(0);
+  const [lastScore, setLastScore] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
       fetchHighScore();
-      initializeGame();
     }
   }, [isOpen, user]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying && !gameComplete) {
+      interval = setInterval(() => setTimer(t => t + 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, gameComplete]);
 
   const fetchHighScore = async () => {
     if (!user) return;
@@ -47,35 +72,46 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
     if (data) setHighScore(data.memory_best);
   };
 
-  const saveScore = async (finalMoves: number) => {
+  const calculateScore = (finalMoves: number, finalTime: number, finalCombo: number): number => {
+    const config = DIFFICULTIES[difficulty];
+    const baseScore = config.pairs * 100;
+    const movesPenalty = finalMoves * 5;
+    const timePenalty = Math.floor(finalTime / 2);
+    const comboBonus = finalCombo * 25;
+    const timeBonus = finalTime < config.pairs * 5 ? config.timeBonus : 0;
+    
+    return Math.max(0, baseScore - movesPenalty - timePenalty + comboBonus + timeBonus);
+  };
+
+  const saveScore = async (finalScore: number) => {
     if (!user) return;
     
-    // Lower moves is better, so we save if it's a new record or first play
-    const score = 1000 - finalMoves * 10; // Convert to points
-    
-    if (highScore === 0 || score > highScore) {
+    if (highScore === 0 || finalScore > highScore) {
       await supabase
         .from('user_game_stats')
         .upsert({ 
           user_id: user.id, 
-          memory_best: score,
+          memory_best: finalScore,
           updated_at: new Date().toISOString()
         });
       
       await supabase
         .from('game_scores')
-        .insert({ user_id: user.id, game_type: 'memory', score });
+        .insert({ user_id: user.id, game_type: 'memory', score: finalScore });
 
-      setHighScore(score);
+      setHighScore(finalScore);
       toast({
         title: '🏆 Nové nejvyšší skóre!',
-        description: `Paměťová hra: ${score} bodů (${finalMoves} tahů)`,
+        description: `Paměťová hra: ${finalScore} bodů`,
       });
     }
   };
 
   const initializeGame = () => {
-    const shuffled = [...EMOJIS, ...EMOJIS]
+    const config = DIFFICULTIES[difficulty];
+    const emojis = EMOJI_SETS[emojiSet].slice(0, config.pairs);
+    
+    const shuffled = [...emojis, ...emojis]
       .sort(() => Math.random() - 0.5)
       .map((emoji, idx) => ({
         id: idx,
@@ -83,18 +119,29 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
         isFlipped: false,
         isMatched: false,
       }));
+    
     setCards(shuffled);
     setFlippedCards([]);
     setMoves(0);
     setMatches(0);
     setGameComplete(false);
+    setTimer(0);
+    setIsPlaying(false);
+    setCombo(0);
+    setLastScore(0);
   };
+
+  useEffect(() => {
+    if (isOpen) initializeGame();
+  }, [isOpen, difficulty, emojiSet]);
 
   const handleCardClick = (id: number) => {
     if (isChecking) return;
     if (flippedCards.includes(id)) return;
     if (cards[id].isMatched) return;
     if (flippedCards.length >= 2) return;
+
+    if (!isPlaying) setIsPlaying(true);
 
     const newFlipped = [...flippedCards, id];
     setFlippedCards(newFlipped);
@@ -109,6 +156,9 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
       const [first, second] = newFlipped;
       if (cards[first].emoji === cards[second].emoji) {
         // Match found
+        const newCombo = combo + 1;
+        setCombo(newCombo);
+        
         setTimeout(() => {
           setCards(prev => prev.map(card =>
             card.id === first || card.id === second
@@ -117,9 +167,12 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
           ));
           setMatches(m => {
             const newMatches = m + 1;
-            if (newMatches === EMOJIS.length) {
+            if (newMatches === DIFFICULTIES[difficulty].pairs) {
               setGameComplete(true);
-              saveScore(moves + 1);
+              setIsPlaying(false);
+              const finalScore = calculateScore(moves + 1, timer, newCombo);
+              setLastScore(finalScore);
+              saveScore(finalScore);
             }
             return newMatches;
           });
@@ -127,7 +180,8 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
           setIsChecking(false);
         }, 500);
       } else {
-        // No match
+        // No match - reset combo
+        setCombo(0);
         setTimeout(() => {
           setCards(prev => prev.map(card =>
             card.id === first || card.id === second
@@ -143,44 +197,95 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
 
   if (!isOpen) return null;
 
+  const config = DIFFICULTIES[difficulty];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-blue-500/10 to-cyan-500/10">
+        <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-blue-500/10 to-cyan-500/10">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold">🧠 Paměťová hra</h3>
+            {combo > 1 && (
+              <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded animate-pulse">
+                🔥 x{combo}
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm">
-              <Trophy className="h-4 w-4 inline mr-1 text-yellow-500" />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 text-sm">
+              <Trophy className="h-4 w-4 text-yellow-500" />
               {highScore}
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
+        {/* Settings */}
+        {!isPlaying && !gameComplete && (
+          <div className="p-2 border-b border-border bg-secondary/20 flex flex-wrap justify-center gap-2">
+            <div className="flex gap-1">
+              {(['easy', 'medium', 'hard'] as Difficulty[]).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setDifficulty(d)}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    difficulty === d ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                  }`}
+                >
+                  {d === 'easy' ? 'Lehká' : d === 'medium' ? 'Střední' : 'Těžká'}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              {(Object.keys(EMOJI_SETS) as (keyof typeof EMOJI_SETS)[]).map(set => (
+                <button
+                  key={set}
+                  onClick={() => setEmojiSet(set)}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    emojiSet === set ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                  }`}
+                >
+                  {set === 'animals' ? '🐶' : set === 'food' ? '🍕' : '⚽'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
-        <div className="p-2 text-center bg-secondary/30 flex justify-center gap-6">
-          <span>Tahy: {moves}</span>
-          <span>Páry: {matches}/{EMOJIS.length}</span>
+        <div className="p-2 text-center bg-secondary/30 flex justify-center gap-4 text-sm">
+          <span className="flex items-center gap-1">
+            <Zap className="h-4 w-4" /> {moves} tahů
+          </span>
+          <span>🎯 {matches}/{config.pairs}</span>
+          <span className="flex items-center gap-1">
+            <Clock className="h-4 w-4" /> {timer}s
+          </span>
         </div>
 
         {/* Game Grid */}
-        <div className="p-4">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="p-3">
+          <div 
+            className="grid gap-2 mx-auto"
+            style={{ 
+              gridTemplateColumns: `repeat(${config.cols}, 1fr)`,
+              maxWidth: config.cols * 56 + (config.cols - 1) * 8
+            }}
+          >
             {cards.map(card => (
               <button
                 key={card.id}
                 onClick={() => handleCardClick(card.id)}
                 disabled={card.isMatched || card.isFlipped}
-                className={`aspect-square rounded-lg text-2xl flex items-center justify-center transition-all duration-300 ${
+                className={`aspect-square rounded-lg text-2xl flex items-center justify-center transition-all duration-300 transform ${
                   card.isFlipped || card.isMatched
-                    ? 'bg-primary/20 rotate-0'
-                    : 'bg-primary hover:bg-primary/80 rotate-y-180'
-                } ${card.isMatched ? 'opacity-50' : ''}`}
+                    ? 'bg-primary/20 scale-100'
+                    : 'bg-primary hover:bg-primary/80 hover:scale-105'
+                } ${card.isMatched ? 'opacity-50 scale-95' : ''}`}
+                style={{ minWidth: 48, minHeight: 48 }}
               >
                 {card.isFlipped || card.isMatched ? card.emoji : '❓'}
               </button>
@@ -192,12 +297,15 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
         {gameComplete && (
           <div className="p-4 text-center bg-green-500/10 border-t border-border">
             <p className="text-lg font-bold text-green-500">🎉 Gratuluji!</p>
-            <p className="text-sm text-muted-foreground">Dokončeno za {moves} tahů</p>
+            <p className="text-sm text-muted-foreground">
+              {moves} tahů • {timer}s • Combo: {combo}
+            </p>
+            <p className="text-xl font-bold mt-2">Skóre: {lastScore}</p>
           </div>
         )}
 
         {/* Reset Button */}
-        <div className="p-4 border-t border-border">
+        <div className="p-3 border-t border-border">
           <Button onClick={initializeGame} className="w-full" variant="outline">
             <RotateCcw className="h-4 w-4 mr-2" />
             Nová hra
