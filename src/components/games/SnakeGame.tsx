@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Trophy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Zap, Star } from 'lucide-react';
+import { X, Trophy, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -34,30 +34,81 @@ const POWER_UP_CONFIG: Record<PowerUpType, { emoji: string; duration: number; co
   shrink: { emoji: '💊', duration: 0, color: 'bg-pink-500' },
 };
 
+// Memoized grid cell component
+const GridCell = memo(({ 
+  isSnakeHead, 
+  isSnakeBody, 
+  isFood, 
+  powerUpType 
+}: { 
+  isSnakeHead: boolean; 
+  isSnakeBody: boolean; 
+  isFood: boolean; 
+  powerUpType: PowerUpType | null;
+}) => {
+  const baseClass = 'w-4 h-4 rounded-sm';
+  
+  if (isSnakeHead) {
+    return <div className={`${baseClass} bg-green-400 shadow-lg shadow-green-500/50`} />;
+  }
+  if (isSnakeBody) {
+    return <div className={`${baseClass} bg-green-500`} />;
+  }
+  if (isFood) {
+    return <div className={`${baseClass} bg-red-500 animate-pulse`} />;
+  }
+  if (powerUpType) {
+    return (
+      <div className={`${baseClass} ${POWER_UP_CONFIG[powerUpType].color} animate-bounce flex items-center justify-center`}>
+        <span className="text-xs">{POWER_UP_CONFIG[powerUpType].emoji}</span>
+      </div>
+    );
+  }
+  return <div className={`${baseClass} bg-muted/30`} />;
+});
+
+GridCell.displayName = 'GridCell';
+
 export function SnakeGame({ isOpen, onClose }: SnakeGameProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [snake, setSnake] = useState<Position[]>([{ x: 7, y: 7 }]);
   const [food, setFood] = useState<Position>({ x: 5, y: 5 });
-  const [direction, setDirection] = useState<Direction>('RIGHT');
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
-  const [speed, setSpeed] = useState(INITIAL_SPEED);
   const [powerUp, setPowerUp] = useState<PowerUp | null>(null);
   const [activeEffects, setActiveEffects] = useState<{ type: PowerUpType; endsAt: number }[]>([]);
   const [multiplier, setMultiplier] = useState(1);
   
-  const directionRef = useRef(direction);
-  const gameLoopRef = useRef<NodeJS.Timeout>();
+  const directionRef = useRef<Direction>('RIGHT');
+  const speedRef = useRef(INITIAL_SPEED);
+  const gameLoopRef = useRef<number>();
+  const scoreRef = useRef(0);
+  const multiplierRef = useRef(1);
+  const foodRef = useRef(food);
+  const powerUpRef = useRef<PowerUp | null>(null);
+
+  // Keep refs in sync
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
 
   useEffect(() => {
-    directionRef.current = direction;
-  }, [direction]);
+    multiplierRef.current = multiplier;
+  }, [multiplier]);
 
   useEffect(() => {
-    if (isOpen) {
+    foodRef.current = food;
+  }, [food]);
+
+  useEffect(() => {
+    powerUpRef.current = powerUp;
+  }, [powerUp]);
+
+  useEffect(() => {
+    if (isOpen && user) {
       fetchHighScore();
       resetGame();
     }
@@ -73,8 +124,17 @@ export function SnakeGame({ isOpen, onClose }: SnakeGameProps) {
     if (data) setHighScore(data.snake_best);
   };
 
-  const saveScore = async (newScore: number) => {
-    if (!user || newScore <= highScore) return;
+  const saveScore = useCallback(async (newScore: number) => {
+    if (!user) return;
+    
+    const { data: currentData } = await supabase
+      .from('user_game_stats')
+      .select('snake_best')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    const currentBest = currentData?.snake_best || 0;
+    if (newScore <= currentBest) return;
     
     await supabase
       .from('user_game_stats')
@@ -93,7 +153,7 @@ export function SnakeGame({ isOpen, onClose }: SnakeGameProps) {
       title: '🏆 Nové nejvyšší skóre!',
       description: `Snake: ${newScore} bodů`,
     });
-  };
+  }, [user, toast]);
 
   const generateFood = useCallback((snakeBody: Position[]): Position => {
     let newFood: Position;
@@ -126,167 +186,212 @@ export function SnakeGame({ isOpen, onClose }: SnakeGameProps) {
     return { position, type, expiresAt: Date.now() + 10000 };
   }, []);
 
-  const resetGame = () => {
+  const resetGame = useCallback(() => {
     const initialSnake = [{ x: 7, y: 7 }];
     setSnake(initialSnake);
-    setFood(generateFood(initialSnake));
-    setDirection('RIGHT');
+    const newFood = generateFood(initialSnake);
+    setFood(newFood);
+    foodRef.current = newFood;
+    directionRef.current = 'RIGHT';
     setGameOver(false);
     setScore(0);
+    scoreRef.current = 0;
     setIsPaused(true);
-    setSpeed(INITIAL_SPEED);
+    speedRef.current = INITIAL_SPEED;
     setPowerUp(null);
+    powerUpRef.current = null;
     setActiveEffects([]);
     setMultiplier(1);
-  };
+    multiplierRef.current = 1;
+  }, [generateFood]);
 
-  const applyPowerUp = (type: PowerUpType) => {
+  const applyPowerUp = useCallback((type: PowerUpType) => {
     const now = Date.now();
     const config = POWER_UP_CONFIG[type];
     
     switch (type) {
       case 'speed':
-        setSpeed(80);
+        speedRef.current = 80;
         setActiveEffects(prev => [...prev.filter(e => e.type !== 'speed' && e.type !== 'slow'), { type, endsAt: now + config.duration }]);
         break;
       case 'slow':
-        setSpeed(250);
+        speedRef.current = 250;
         setActiveEffects(prev => [...prev.filter(e => e.type !== 'speed' && e.type !== 'slow'), { type, endsAt: now + config.duration }]);
         break;
       case 'double':
         setMultiplier(2);
+        multiplierRef.current = 2;
         setActiveEffects(prev => [...prev.filter(e => e.type !== 'double'), { type, endsAt: now + config.duration }]);
         break;
       case 'shrink':
         setSnake(prev => prev.length > 3 ? prev.slice(0, -2) : prev);
         break;
     }
-  };
+  }, []);
 
+  // Effect expiration check
   useEffect(() => {
+    if (!isOpen || gameOver || isPaused) return;
+    
     const interval = setInterval(() => {
       const now = Date.now();
       setActiveEffects(prev => {
         const active = prev.filter(e => e.endsAt > now);
         if (active.length !== prev.length) {
           if (!active.some(e => e.type === 'speed' || e.type === 'slow')) {
-            setSpeed(INITIAL_SPEED);
+            speedRef.current = INITIAL_SPEED;
           }
           if (!active.some(e => e.type === 'double')) {
             setMultiplier(1);
+            multiplierRef.current = 1;
           }
         }
         return active;
       });
       
       setPowerUp(prev => prev && prev.expiresAt > now ? prev : null);
-    }, 100);
+    }, 500);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [isOpen, gameOver, isPaused]);
 
-  const moveSnake = useCallback(() => {
-    if (gameOver || isPaused) return;
-
-    setSnake(prevSnake => {
-      const head = { ...prevSnake[0] };
-      const dir = directionRef.current;
-
-      switch (dir) {
-        case 'UP': head.y -= 1; break;
-        case 'DOWN': head.y += 1; break;
-        case 'LEFT': head.x -= 1; break;
-        case 'RIGHT': head.x += 1; break;
-      }
-
-      if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-        setGameOver(true);
-        saveScore(score);
-        return prevSnake;
-      }
-
-      if (prevSnake.some(s => s.x === head.x && s.y === head.y)) {
-        setGameOver(true);
-        saveScore(score);
-        return prevSnake;
-      }
-
-      const newSnake = [head, ...prevSnake];
-
-      if (head.x === food.x && head.y === food.y) {
-        const points = 10 * multiplier;
-        setScore(s => s + points);
-        const newFood = generateFood(newSnake);
-        setFood(newFood);
-        
-        if (!powerUp) {
-          const newPowerUp = generatePowerUp(newSnake, newFood);
-          if (newPowerUp) setPowerUp(newPowerUp);
-        }
-        
-        return newSnake;
-      }
-      
-      if (powerUp && head.x === powerUp.position.x && head.y === powerUp.position.y) {
-        applyPowerUp(powerUp.type);
-        setPowerUp(null);
-        setScore(s => s + 25 * multiplier);
-      }
-
-      newSnake.pop();
-      return newSnake;
-    });
-  }, [gameOver, isPaused, food, powerUp, score, multiplier, generateFood, generatePowerUp]);
-
+  // Main game loop using requestAnimationFrame
   useEffect(() => {
     if (!isOpen || gameOver || isPaused) {
-      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+        gameLoopRef.current = undefined;
+      }
       return;
     }
 
-    gameLoopRef.current = setInterval(moveSnake, speed);
-    return () => {
-      if (gameLoopRef.current) clearInterval(gameLoopRef.current);
-    };
-  }, [isOpen, gameOver, isPaused, speed, moveSnake]);
+    let lastTime = performance.now();
+    
+    const gameLoop = (currentTime: number) => {
+      const deltaTime = currentTime - lastTime;
+      
+      if (deltaTime >= speedRef.current) {
+        lastTime = currentTime;
+        
+        setSnake(prevSnake => {
+          const head = { ...prevSnake[0] };
+          const dir = directionRef.current;
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (!isOpen) return;
-    
-    const keyDirections: Record<string, Direction> = {
-      ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
-      w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
+          switch (dir) {
+            case 'UP': head.y -= 1; break;
+            case 'DOWN': head.y += 1; break;
+            case 'LEFT': head.x -= 1; break;
+            case 'RIGHT': head.x += 1; break;
+          }
+
+          // Wall collision
+          if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+            setGameOver(true);
+            saveScore(scoreRef.current);
+            return prevSnake;
+          }
+
+          // Self collision
+          if (prevSnake.some(s => s.x === head.x && s.y === head.y)) {
+            setGameOver(true);
+            saveScore(scoreRef.current);
+            return prevSnake;
+          }
+
+          const newSnake = [head, ...prevSnake];
+          const currentFood = foodRef.current;
+          const currentPowerUp = powerUpRef.current;
+
+          // Food collision
+          if (head.x === currentFood.x && head.y === currentFood.y) {
+            const points = 10 * multiplierRef.current;
+            setScore(s => s + points);
+            const newFood = generateFood(newSnake);
+            setFood(newFood);
+            foodRef.current = newFood;
+            
+            if (!currentPowerUp) {
+              const newPowerUp = generatePowerUp(newSnake, newFood);
+              if (newPowerUp) {
+                setPowerUp(newPowerUp);
+                powerUpRef.current = newPowerUp;
+              }
+            }
+            
+            return newSnake;
+          }
+          
+          // PowerUp collision
+          if (currentPowerUp && head.x === currentPowerUp.position.x && head.y === currentPowerUp.position.y) {
+            applyPowerUp(currentPowerUp.type);
+            setPowerUp(null);
+            powerUpRef.current = null;
+            setScore(s => s + 25 * multiplierRef.current);
+          }
+
+          newSnake.pop();
+          return newSnake;
+        });
+      }
+
+      gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
+
+    gameLoopRef.current = requestAnimationFrame(gameLoop);
     
-    const newDir = keyDirections[e.key];
-    if (!newDir) return;
-    
-    const opposites: Record<Direction, Direction> = {
-      UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT'
+    return () => {
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
     };
-    
-    if (opposites[newDir] !== directionRef.current) {
-      setDirection(newDir);
-      if (isPaused) setIsPaused(false);
-    }
+  }, [isOpen, gameOver, isPaused, generateFood, generatePowerUp, applyPowerUp, saveScore]);
+
+  // Keyboard controls with preventDefault
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+      
+      const keyDirections: Record<string, Direction> = {
+        ArrowUp: 'UP', ArrowDown: 'DOWN', ArrowLeft: 'LEFT', ArrowRight: 'RIGHT',
+        w: 'UP', s: 'DOWN', a: 'LEFT', d: 'RIGHT',
+        W: 'UP', S: 'DOWN', A: 'LEFT', D: 'RIGHT',
+      };
+      
+      const newDir = keyDirections[e.key];
+      if (!newDir) return;
+      
+      // Prevent page scrolling
+      e.preventDefault();
+      
+      const opposites: Record<Direction, Direction> = {
+        UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT'
+      };
+      
+      if (opposites[newDir] !== directionRef.current) {
+        directionRef.current = newDir;
+        if (isPaused) setIsPaused(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true });
   }, [isOpen, isPaused]);
 
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
-  const handleDirectionClick = (dir: Direction) => {
+  const handleDirectionClick = useCallback((dir: Direction) => {
     const opposites: Record<Direction, Direction> = {
       UP: 'DOWN', DOWN: 'UP', LEFT: 'RIGHT', RIGHT: 'LEFT'
     };
     if (opposites[dir] !== directionRef.current) {
-      setDirection(dir);
+      directionRef.current = dir;
       if (isPaused) setIsPaused(false);
     }
-  };
+  }, [isPaused]);
 
   if (!isOpen) return null;
+
+  // Pre-calculate positions for O(1) lookup
+  const snakeSet = new Set(snake.map(s => `${s.x},${s.y}`));
+  const headKey = `${snake[0].x},${snake[0].y}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -336,28 +441,20 @@ export function SnakeGame({ isOpen, onClose }: SnakeGameProps) {
             {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, idx) => {
               const x = idx % GRID_SIZE;
               const y = Math.floor(idx / GRID_SIZE);
-              const isSnakeHead = snake[0].x === x && snake[0].y === y;
-              const isSnakeBody = snake.slice(1).some(s => s.x === x && s.y === y);
+              const key = `${x},${y}`;
+              const isSnakeHead = key === headKey;
+              const isSnakeBody = !isSnakeHead && snakeSet.has(key);
               const isFood = food.x === x && food.y === y;
               const isPowerUpCell = powerUp && powerUp.position.x === x && powerUp.position.y === y;
 
               return (
-                <div
+                <GridCell
                   key={idx}
-                  className={`w-4 h-4 rounded-sm transition-colors ${
-                    isSnakeHead ? 'bg-green-400 shadow-lg shadow-green-500/50' :
-                    isSnakeBody ? 'bg-green-500' :
-                    isFood ? 'bg-red-500 animate-pulse' :
-                    isPowerUpCell ? `${POWER_UP_CONFIG[powerUp.type].color} animate-bounce` :
-                    'bg-muted/30'
-                  }`}
-                >
-                  {isPowerUpCell && (
-                    <span className="flex items-center justify-center text-xs">
-                      {POWER_UP_CONFIG[powerUp.type].emoji}
-                    </span>
-                  )}
-                </div>
+                  isSnakeHead={isSnakeHead}
+                  isSnakeBody={isSnakeBody}
+                  isFood={isFood}
+                  powerUpType={isPowerUpCell ? powerUp.type : null}
+                />
               );
             })}
           </div>
