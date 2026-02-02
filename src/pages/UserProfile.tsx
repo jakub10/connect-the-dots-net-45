@@ -10,7 +10,7 @@ import { PostCard } from '@/components/social/PostCard';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Loader2, MapPin, Link as LinkIcon, Calendar, MessageCircle, UserPlus, UserCheck } from 'lucide-react';
+import { Loader2, MapPin, Link as LinkIcon, Calendar, MessageCircle, UserPlus, UserCheck, UserX, Check, X as XIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -52,7 +52,8 @@ const UserProfile = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
-  const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending' | 'accepted'>('none');
+  const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending_sent' | 'pending_received' | 'accepted'>('none');
+  const [friendshipId, setFriendshipId] = useState<string | null>(null);
   const [postsCount, setPostsCount] = useState(0);
   const [friendsCount, setFriendsCount] = useState(0);
 
@@ -79,14 +80,25 @@ const UserProfile = () => {
     
     const { data } = await supabase
       .from('friendships')
-      .select('status')
+      .select('id, status, requester_id, addressee_id')
       .or(`and(requester_id.eq.${user.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${user.id})`)
       .maybeSingle();
     
     if (data) {
-      setFriendshipStatus(data.status as 'pending' | 'accepted');
+      setFriendshipId(data.id);
+      if (data.status === 'accepted') {
+        setFriendshipStatus('accepted');
+      } else if (data.status === 'pending') {
+        // Check if current user sent the request or received it
+        if (data.requester_id === user.id) {
+          setFriendshipStatus('pending_sent');
+        } else {
+          setFriendshipStatus('pending_received');
+        }
+      }
     } else {
       setFriendshipStatus('none');
+      setFriendshipId(null);
     }
   };
 
@@ -213,10 +225,45 @@ const UserProfile = () => {
       });
 
     if (!error) {
-      setFriendshipStatus('pending');
+      setFriendshipStatus('pending_sent');
       toast({
         title: 'Žádost odeslána',
         description: `Žádost o přátelství byla odeslána uživateli ${profile.full_name}.`,
+      });
+    }
+  };
+
+  const acceptFriendRequest = async () => {
+    if (!friendshipId) return;
+
+    const { error } = await supabase
+      .from('friendships')
+      .update({ status: 'accepted' })
+      .eq('id', friendshipId);
+
+    if (!error) {
+      setFriendshipStatus('accepted');
+      toast({
+        title: 'Přátelství přijato',
+        description: `Nyní jste přátelé s ${profile?.full_name}.`,
+      });
+    }
+  };
+
+  const declineFriendRequest = async () => {
+    if (!friendshipId) return;
+
+    const { error } = await supabase
+      .from('friendships')
+      .delete()
+      .eq('id', friendshipId);
+
+    if (!error) {
+      setFriendshipStatus('none');
+      setFriendshipId(null);
+      toast({
+        title: 'Žádost odmítnuta',
+        description: 'Žádost o přátelství byla odmítnuta.',
       });
     }
   };
@@ -288,11 +335,23 @@ const UserProfile = () => {
                         Přidat přítele
                       </Button>
                     )}
-                    {friendshipStatus === 'pending' && (
+                    {friendshipStatus === 'pending_sent' && (
                       <Button variant="outline" size="sm" disabled>
                         <UserCheck className="h-4 w-4 mr-2" />
                         Žádost odeslána
                       </Button>
+                    )}
+                    {friendshipStatus === 'pending_received' && (
+                      <>
+                        <Button variant="default" size="sm" onClick={acceptFriendRequest}>
+                          <Check className="h-4 w-4 mr-2" />
+                          Přijmout
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={declineFriendRequest}>
+                          <XIcon className="h-4 w-4 mr-2" />
+                          Odmítnout
+                        </Button>
+                      </>
                     )}
                     {friendshipStatus === 'accepted' && (
                       <Button variant="outline" size="sm" disabled>

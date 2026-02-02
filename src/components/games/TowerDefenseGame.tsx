@@ -272,28 +272,20 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
   const placeTower = useCallback((x: number, y: number) => {
     if (y === PATH_Y || gameOver) return;
     
-    setTowers(prevTowers => {
-      if (prevTowers.some(t => t.x === x && t.y === y)) return prevTowers;
-      
-      const towerType = TOWER_TYPES[selectedTower];
-      
-      setGold(prevGold => {
-        if (prevGold < towerType.cost) return prevGold;
-        return prevGold - towerType.cost;
-      });
-      
-      // Check if we can afford it (need to read current gold)
-      return prevTowers;
-    });
+    const towerType = TOWER_TYPES[selectedTower];
     
-    // Separate check for placing tower
+    // Check if we can afford it and position is free
     setGold(currentGold => {
-      const towerType = TOWER_TYPES[selectedTower];
       if (currentGold < towerType.cost) return currentGold;
       
+      // Check if there's already a tower at this position
       setTowers(prevTowers => {
-        if (prevTowers.some(t => t.x === x && t.y === y)) return prevTowers;
+        if (prevTowers.some(t => t.x === x && t.y === y)) {
+          // Position taken, refund gold by not deducting
+          return prevTowers;
+        }
         
+        // Position free, place tower
         return [...prevTowers, {
           id: towerIdRef.current++,
           x,
@@ -306,6 +298,7 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
         }];
       });
       
+      // Deduct gold (we check position in towers update)
       return currentGold - towerType.cost;
     });
   }, [gameOver, selectedTower]);
