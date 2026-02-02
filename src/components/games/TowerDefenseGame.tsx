@@ -118,6 +118,7 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
   const scoreRef = useRef(0);
   const waveRef = useRef(0);
   const gameLoopRef = useRef<number>();
+  const towersRef = useRef<Tower[]>([]);
 
   // Keep refs in sync
   useEffect(() => {
@@ -127,6 +128,10 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
   useEffect(() => {
     waveRef.current = wave;
   }, [wave]);
+
+  useEffect(() => {
+    towersRef.current = towers;
+  }, [towers]);
 
   useEffect(() => {
     if (isOpen && user) fetchHighScore();
@@ -325,7 +330,9 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
         const now = gameTimeRef.current;
         setGameTime(now);
 
+        // Process tower attacks and enemy movement together
         setEnemies(prevEnemies => {
+          // Move enemies
           let updatedEnemies = prevEnemies.map(e => {
             const speedMod = e.frozen > now ? 0.3 : 1;
             return {
@@ -334,40 +341,51 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
             };
           });
 
-          // Tower attacks
-          setTowers(currentTowers => {
-            return currentTowers.map(tower => {
-              if (now - tower.lastFire < tower.fireRate) return tower;
-              
-              // Find closest enemy in range
-              let closestEnemy: Enemy | null = null;
-              let closestDist = Infinity;
-              
-              updatedEnemies.forEach(enemy => {
-                if (enemy.hp <= 0) return;
-                const dx = Math.abs(tower.x - enemy.x);
-                const dy = Math.abs(tower.y - PATH_Y);
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist <= tower.range && dist < closestDist) {
-                  closestDist = dist;
-                  closestEnemy = enemy;
-                }
-              });
-              
-              if (closestEnemy) {
-                updatedEnemies = updatedEnemies.map(e => {
-                  if (e.id === closestEnemy!.id) {
-                    const newHp = e.hp - tower.damage;
-                    const frozen = tower.type === 'ice' ? now + 2000 : e.frozen;
-                    return { ...e, hp: newHp, frozen };
-                  }
-                  return e;
-                });
-                return { ...tower, lastFire: now };
+          // Process tower attacks using ref
+          const currentTowers = towersRef.current;
+          const newTowers: Tower[] = [];
+          
+          currentTowers.forEach(tower => {
+            if (now - tower.lastFire < tower.fireRate) {
+              newTowers.push(tower);
+              return;
+            }
+            
+            // Find closest enemy in range
+            let closestEnemy: Enemy | null = null;
+            let closestDist = Infinity;
+            
+            updatedEnemies.forEach(enemy => {
+              if (enemy.hp <= 0) return;
+              const dx = Math.abs(tower.x - enemy.x);
+              const dy = Math.abs(tower.y - PATH_Y);
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist <= tower.range && dist < closestDist) {
+                closestDist = dist;
+                closestEnemy = enemy;
               }
-              return tower;
             });
+            
+            if (closestEnemy) {
+              // Apply damage to enemy
+              updatedEnemies = updatedEnemies.map(e => {
+                if (e.id === closestEnemy!.id) {
+                  const newHp = e.hp - tower.damage;
+                  const frozen = tower.type === 'ice' ? now + 2000 : e.frozen;
+                  return { ...e, hp: newHp, frozen };
+                }
+                return e;
+              });
+              newTowers.push({ ...tower, lastFire: now });
+            } else {
+              newTowers.push(tower);
+            }
           });
+          
+          // Update towers state if any fired
+          if (newTowers.some((t, i) => t.lastFire !== currentTowers[i]?.lastFire)) {
+            setTowers(newTowers);
+          }
 
           // Check for dead enemies and passed enemies
           const alive = updatedEnemies.filter(e => {
