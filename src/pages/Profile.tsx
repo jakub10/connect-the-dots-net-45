@@ -16,8 +16,11 @@ import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3, Tr
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { Achievements } from '@/components/profile/Achievements';
+import { VIPActivation } from '@/components/profile/VIPActivation';
+import { CreatorPanel } from '@/components/profile/CreatorPanel';
 import { useAchievements } from '@/hooks/useAchievements';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Crown } from 'lucide-react';
 
 interface Profile {
   username: string;
@@ -342,16 +345,24 @@ const Profile = () => {
 
           {/* Tabs for content */}
           <Tabs defaultValue="achievements" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="achievements" className="gap-2">
                 <Trophy className="h-4 w-4" />
                 Achievementy
+              </TabsTrigger>
+              <TabsTrigger value="vip" className="gap-2">
+                <Crown className="h-4 w-4" />
+                VIP
               </TabsTrigger>
               <TabsTrigger value="posts">Příspěvky</TabsTrigger>
             </TabsList>
             
             <TabsContent value="achievements" className="mt-4">
               <Achievements />
+            </TabsContent>
+
+            <TabsContent value="vip" className="mt-4">
+              <VIPActivation />
             </TabsContent>
             
             <TabsContent value="posts" className="mt-4">
@@ -364,6 +375,9 @@ const Profile = () => {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Creator Panel - hidden button at bottom right */}
+          <CreatorPanel />
         </div>
       </main>
 

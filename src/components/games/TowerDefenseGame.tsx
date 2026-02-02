@@ -27,41 +27,77 @@ interface Enemy {
   hp: number;
   maxHp: number;
   speed: number;
-  type: 'normal' | 'fast' | 'tank' | 'boss';
+  type: 'normal' | 'fast' | 'tank' | 'boss' | 'healer' | 'armored';
   frozen: number;
   reward: number;
 }
 
-const GRID_WIDTH = 12;
-const GRID_HEIGHT = 7;
-const PATH_Y = 3;
+interface Projectile {
+  id: number;
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  type: 'basic' | 'fire' | 'ice' | 'sniper';
+  createdAt: number;
+}
+
+const GRID_WIDTH = 16; // Longer track
+const GRID_HEIGHT = 9;
+const PATH_Y = 4;
 
 const TOWER_TYPES = {
-  basic: { cost: 50, damage: 15, range: 2, fireRate: 500, icon: Shield, color: 'bg-blue-500', name: 'Základní' },
-  fire: { cost: 100, damage: 25, range: 1.5, fireRate: 300, icon: Flame, color: 'bg-orange-500', name: 'Ohnivá' },
-  ice: { cost: 80, damage: 10, range: 2.5, fireRate: 800, icon: Snowflake, color: 'bg-cyan-400', name: 'Ledová' },
-  sniper: { cost: 150, damage: 50, range: 4, fireRate: 1500, icon: Target, color: 'bg-purple-500', name: 'Sniper' },
+  basic: { cost: 50, damage: 20, range: 2.5, fireRate: 400, icon: Shield, color: 'bg-blue-500', name: 'Základní' },
+  fire: { cost: 100, damage: 35, range: 2, fireRate: 250, icon: Flame, color: 'bg-orange-500', name: 'Ohnivá' },
+  ice: { cost: 80, damage: 12, range: 3, fireRate: 600, icon: Snowflake, color: 'bg-cyan-400', name: 'Ledová' },
+  sniper: { cost: 150, damage: 75, range: 5, fireRate: 1200, icon: Target, color: 'bg-purple-500', name: 'Sniper' },
 };
 
 const ENEMY_TYPES = {
-  normal: { hp: 50, speed: 0.02, emoji: '👾', reward: 15 },
-  fast: { hp: 30, speed: 0.04, emoji: '🦇', reward: 20 },
-  tank: { hp: 150, speed: 0.01, emoji: '🤖', reward: 40 },
-  boss: { hp: 500, speed: 0.008, emoji: '👹', reward: 200 },
+  normal: { hp: 60, speed: 0.025, emoji: '👾', reward: 15 },
+  fast: { hp: 35, speed: 0.05, emoji: '🦇', reward: 20 },
+  tank: { hp: 180, speed: 0.012, emoji: '🤖', reward: 45 },
+  boss: { hp: 600, speed: 0.008, emoji: '👹', reward: 200 },
+  healer: { hp: 80, speed: 0.02, emoji: '💚', reward: 35 },
+  armored: { hp: 120, speed: 0.018, emoji: '🛡️', reward: 50 },
 };
+
+// Projectile component
+const ProjectileComponent = memo(({ projectile, gameTime }: { projectile: Projectile; gameTime: number }) => {
+  const progress = Math.min(1, (gameTime - projectile.createdAt) / 150);
+  const x = projectile.fromX + (projectile.toX - projectile.fromX) * progress;
+  const y = projectile.fromY + (projectile.toY - projectile.fromY) * progress;
+  
+  const colors = {
+    basic: 'bg-blue-400',
+    fire: 'bg-orange-400',
+    ice: 'bg-cyan-300',
+    sniper: 'bg-purple-400',
+  };
+
+  return (
+    <div
+      className={`absolute w-2 h-2 rounded-full ${colors[projectile.type]} shadow-lg z-20`}
+      style={{
+        left: `${(x / GRID_WIDTH) * 100}%`,
+        top: `${(y / GRID_HEIGHT) * 100}%`,
+        transform: 'translate(-50%, -50%)',
+        opacity: 1 - progress * 0.3,
+      }}
+    />
+  );
+});
+
+ProjectileComponent.displayName = 'ProjectileComponent';
 
 // Memoized grid cell
 const GridCell = memo(({ 
   isPath, 
   tower, 
-  enemy, 
-  gameTimeRef,
   onClick 
 }: { 
   isPath: boolean;
   tower: Tower | undefined;
-  enemy: Enemy | undefined;
-  gameTimeRef: number;
   onClick: () => void;
 }) => {
   const TowerIcon = tower ? TOWER_TYPES[tower.type].icon : null;
@@ -76,20 +112,17 @@ const GridCell = memo(({
       }`}
     >
       {TowerIcon && <TowerIcon className="h-3 w-3 text-white" />}
-      {enemy && (
-        <div className="relative z-10">
-          <span className={`${enemy.type === 'boss' ? 'text-lg' : 'text-sm'}`}>
-            {ENEMY_TYPES[enemy.type].emoji}
-          </span>
-          <div className="absolute -top-1 left-0 right-0 h-0.5 bg-red-900 rounded overflow-hidden">
-            <div 
-              className={`h-full rounded transition-all ${
-                enemy.frozen > gameTimeRef ? 'bg-cyan-400' : 'bg-green-500'
-              }`}
-              style={{ width: `${(enemy.hp / enemy.maxHp) * 100}%` }}
-            />
-          </div>
-        </div>
+      {tower && (
+        <div 
+          className="absolute inset-0 rounded-full border border-current opacity-10 pointer-events-none"
+          style={{
+            width: `${tower.range * 200}%`,
+            height: `${tower.range * 200}%`,
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
       )}
     </div>
   );
@@ -97,11 +130,41 @@ const GridCell = memo(({
 
 GridCell.displayName = 'GridCell';
 
+// Enemy component with smooth movement
+const EnemyComponent = memo(({ enemy, gameTime }: { enemy: Enemy; gameTime: number }) => {
+  const isFrozen = enemy.frozen > gameTime;
+  const hpPercent = (enemy.hp / enemy.maxHp) * 100;
+  
+  return (
+    <div
+      className="absolute z-10 flex flex-col items-center transition-transform"
+      style={{
+        left: `${(enemy.x / GRID_WIDTH) * 100}%`,
+        top: `${(PATH_Y / GRID_HEIGHT) * 100}%`,
+        transform: 'translate(-50%, -50%)',
+      }}
+    >
+      <div className="w-6 h-1 bg-red-900 rounded overflow-hidden mb-0.5">
+        <div 
+          className={`h-full rounded transition-all ${isFrozen ? 'bg-cyan-400' : 'bg-green-500'}`}
+          style={{ width: `${hpPercent}%` }}
+        />
+      </div>
+      <span className={`${enemy.type === 'boss' ? 'text-xl' : 'text-base'} ${isFrozen ? 'opacity-60' : ''}`}>
+        {ENEMY_TYPES[enemy.type].emoji}
+      </span>
+    </div>
+  );
+});
+
+EnemyComponent.displayName = 'EnemyComponent';
+
 export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [towers, setTowers] = useState<Tower[]>([]);
   const [enemies, setEnemies] = useState<Enemy[]>([]);
+  const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [gold, setGold] = useState(150);
   const [lives, setLives] = useState(20);
   const [wave, setWave] = useState(0);
@@ -114,11 +177,13 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
   
   const enemyIdRef = useRef(0);
   const towerIdRef = useRef(0);
+  const projectileIdRef = useRef(0);
   const gameTimeRef = useRef(0);
   const scoreRef = useRef(0);
   const waveRef = useRef(0);
   const gameLoopRef = useRef<number>();
   const towersRef = useRef<Tower[]>([]);
+  const lastFrameTimeRef = useRef(0);
 
   // Keep refs in sync
   useEffect(() => {
@@ -181,6 +246,7 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
   const resetGame = useCallback(() => {
     setTowers([]);
     setEnemies([]);
+    setProjectiles([]);
     setGold(150);
     setLives(20);
     setWave(0);
@@ -190,23 +256,25 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
     setGameTime(0);
     enemyIdRef.current = 0;
     towerIdRef.current = 0;
+    projectileIdRef.current = 0;
     gameTimeRef.current = 0;
     scoreRef.current = 0;
     waveRef.current = 0;
+    lastFrameTimeRef.current = 0;
   }, []);
 
   const spawnEnemies = useCallback((waveNum: number): Enemy[] => {
     const newEnemies: Enemy[] = [];
-    const baseCount = 3 + Math.floor(waveNum / 2);
+    const baseCount = 4 + Math.floor(waveNum / 2);
     
     // Normal enemies
     for (let i = 0; i < baseCount; i++) {
       const type = ENEMY_TYPES.normal;
       newEnemies.push({
         id: enemyIdRef.current++,
-        x: -1 - i * 1.5,
-        hp: type.hp + waveNum * 5,
-        maxHp: type.hp + waveNum * 5,
+        x: -1 - i * 1.8,
+        hp: type.hp + waveNum * 8,
+        maxHp: type.hp + waveNum * 8,
         speed: type.speed,
         type: 'normal',
         frozen: 0,
@@ -216,14 +284,14 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
     
     // Fast enemies from wave 2
     if (waveNum >= 2) {
-      const fastCount = Math.floor(waveNum / 2);
+      const fastCount = Math.floor(waveNum / 2) + 1;
       for (let i = 0; i < fastCount; i++) {
         const type = ENEMY_TYPES.fast;
         newEnemies.push({
           id: enemyIdRef.current++,
-          x: -2 - (baseCount + i) * 1.5,
-          hp: type.hp + waveNum * 3,
-          maxHp: type.hp + waveNum * 3,
+          x: -2 - (baseCount + i) * 1.8,
+          hp: type.hp + waveNum * 5,
+          maxHp: type.hp + waveNum * 5,
           speed: type.speed,
           type: 'fast',
           frozen: 0,
@@ -233,15 +301,48 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
     }
     
     // Tank enemies from wave 3
-    if (waveNum >= 3 && waveNum % 2 === 1) {
-      const type = ENEMY_TYPES.tank;
+    if (waveNum >= 3) {
+      const tankCount = Math.floor(waveNum / 3);
+      for (let i = 0; i < tankCount; i++) {
+        const type = ENEMY_TYPES.tank;
+        newEnemies.push({
+          id: enemyIdRef.current++,
+          x: -3 - (baseCount + 4 + i) * 2,
+          hp: type.hp + waveNum * 25,
+          maxHp: type.hp + waveNum * 25,
+          speed: type.speed,
+          type: 'tank',
+          frozen: 0,
+          reward: type.reward,
+        });
+      }
+    }
+
+    // Healer enemies from wave 4
+    if (waveNum >= 4 && waveNum % 2 === 0) {
+      const type = ENEMY_TYPES.healer;
       newEnemies.push({
         id: enemyIdRef.current++,
-        x: -3 - (baseCount + 2) * 1.5,
-        hp: type.hp + waveNum * 20,
-        maxHp: type.hp + waveNum * 20,
+        x: -4 - (baseCount + 6) * 1.8,
+        hp: type.hp + waveNum * 10,
+        maxHp: type.hp + waveNum * 10,
         speed: type.speed,
-        type: 'tank',
+        type: 'healer',
+        frozen: 0,
+        reward: type.reward,
+      });
+    }
+
+    // Armored enemies from wave 5
+    if (waveNum >= 5) {
+      const type = ENEMY_TYPES.armored;
+      newEnemies.push({
+        id: enemyIdRef.current++,
+        x: -5 - (baseCount + 7) * 1.8,
+        hp: type.hp + waveNum * 15,
+        maxHp: type.hp + waveNum * 15,
+        speed: type.speed,
+        type: 'armored',
         frozen: 0,
         reward: type.reward,
       });
@@ -252,9 +353,9 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
       const type = ENEMY_TYPES.boss;
       newEnemies.push({
         id: enemyIdRef.current++,
-        x: -5 - (baseCount + 3) * 1.5,
-        hp: type.hp + waveNum * 50,
-        maxHp: type.hp + waveNum * 50,
+        x: -6 - (baseCount + 8) * 2,
+        hp: type.hp + waveNum * 80,
+        maxHp: type.hp + waveNum * 80,
         speed: type.speed,
         type: 'boss',
         frozen: 0,
@@ -279,18 +380,14 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
     
     const towerType = TOWER_TYPES[selectedTower];
     
-    // Check if we can afford it and position is free
     setGold(currentGold => {
       if (currentGold < towerType.cost) return currentGold;
       
-      // Check if there's already a tower at this position
       setTowers(prevTowers => {
         if (prevTowers.some(t => t.x === x && t.y === y)) {
-          // Position taken, refund gold by not deducting
           return prevTowers;
         }
         
-        // Position free, place tower
         return [...prevTowers, {
           id: towerIdRef.current++,
           x,
@@ -303,12 +400,11 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
         }];
       });
       
-      // Deduct gold (we check position in towers update)
       return currentGold - towerType.cost;
     });
   }, [gameOver, selectedTower]);
 
-  // Game loop using requestAnimationFrame
+  // Game loop using requestAnimationFrame with smooth movement
   useEffect(() => {
     if (!isOpen || gameOver || !isPlaying) {
       if (gameLoopRef.current) {
@@ -318,106 +414,130 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
       return;
     }
 
-    let lastTime = performance.now();
-    const TICK_RATE = 50; // ms per tick
-
     const gameLoop = (currentTime: number) => {
-      const deltaTime = currentTime - lastTime;
-      
-      if (deltaTime >= TICK_RATE) {
-        lastTime = currentTime;
-        gameTimeRef.current += TICK_RATE;
-        const now = gameTimeRef.current;
-        setGameTime(now);
-
-        // Process tower attacks and enemy movement together
-        setEnemies(prevEnemies => {
-          // Move enemies
-          let updatedEnemies = prevEnemies.map(e => {
-            const speedMod = e.frozen > now ? 0.3 : 1;
-            return {
-              ...e,
-              x: e.x + e.speed * speedMod,
-            };
-          });
-
-          // Process tower attacks using ref
-          const currentTowers = towersRef.current;
-          const newTowers: Tower[] = [];
-          
-          currentTowers.forEach(tower => {
-            if (now - tower.lastFire < tower.fireRate) {
-              newTowers.push(tower);
-              return;
-            }
-            
-            // Find closest enemy in range
-            let closestEnemy: Enemy | null = null;
-            let closestDist = Infinity;
-            
-            updatedEnemies.forEach(enemy => {
-              if (enemy.hp <= 0) return;
-              const dx = Math.abs(tower.x - enemy.x);
-              const dy = Math.abs(tower.y - PATH_Y);
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist <= tower.range && dist < closestDist) {
-                closestDist = dist;
-                closestEnemy = enemy;
-              }
-            });
-            
-            if (closestEnemy) {
-              // Apply damage to enemy
-              updatedEnemies = updatedEnemies.map(e => {
-                if (e.id === closestEnemy!.id) {
-                  const newHp = e.hp - tower.damage;
-                  const frozen = tower.type === 'ice' ? now + 2000 : e.frozen;
-                  return { ...e, hp: newHp, frozen };
-                }
-                return e;
-              });
-              newTowers.push({ ...tower, lastFire: now });
-            } else {
-              newTowers.push(tower);
-            }
-          });
-          
-          // Update towers state if any fired
-          if (newTowers.some((t, i) => t.lastFire !== currentTowers[i]?.lastFire)) {
-            setTowers(newTowers);
-          }
-
-          // Check for dead enemies and passed enemies
-          const alive = updatedEnemies.filter(e => {
-            if (e.hp <= 0) {
-              setGold(g => g + e.reward);
-              setScore(s => s + e.reward * 5);
-              return false;
-            }
-            if (e.x >= GRID_WIDTH) {
-              setLives(l => {
-                const damage = e.type === 'boss' ? 5 : e.type === 'tank' ? 2 : 1;
-                const newLives = l - damage;
-                if (newLives <= 0) {
-                  setGameOver(true);
-                  saveScore(scoreRef.current);
-                }
-                return Math.max(0, newLives);
-              });
-              return false;
-            }
-            return true;
-          });
-
-          if (alive.length === 0 && updatedEnemies.length > 0) {
-            setIsPlaying(false);
-            setScore(s => s + waveRef.current * 100);
-            setGold(g => g + waveRef.current * 25);
-          }
-
-          return alive;
-        });
+      if (lastFrameTimeRef.current === 0) {
+        lastFrameTimeRef.current = currentTime;
       }
+      
+      const deltaTime = currentTime - lastFrameTimeRef.current;
+      lastFrameTimeRef.current = currentTime;
+      
+      // Update game time
+      gameTimeRef.current += deltaTime;
+      const now = gameTimeRef.current;
+      setGameTime(now);
+
+      // Move enemies smoothly based on delta time
+      setEnemies(prevEnemies => {
+        let updatedEnemies = prevEnemies.map(e => {
+          const speedMod = e.frozen > now ? 0.3 : 1;
+          const movement = e.speed * speedMod * (deltaTime / 16.67); // Normalize to 60fps
+          return {
+            ...e,
+            x: e.x + movement,
+          };
+        });
+
+        // Process tower attacks using ref
+        const currentTowers = towersRef.current;
+        const newTowers: Tower[] = [];
+        const newProjectiles: Projectile[] = [];
+        
+        currentTowers.forEach(tower => {
+          if (now - tower.lastFire < tower.fireRate) {
+            newTowers.push(tower);
+            return;
+          }
+          
+          // Find closest enemy in range
+          let closestEnemy: Enemy | null = null;
+          let closestDist = Infinity;
+          
+          updatedEnemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const dx = Math.abs(tower.x - enemy.x);
+            const dy = Math.abs(tower.y - PATH_Y);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= tower.range && dist < closestDist) {
+              closestDist = dist;
+              closestEnemy = enemy;
+            }
+          });
+          
+          if (closestEnemy) {
+            // Create projectile
+            newProjectiles.push({
+              id: projectileIdRef.current++,
+              fromX: tower.x + 0.5,
+              fromY: tower.y + 0.5,
+              toX: closestEnemy.x,
+              toY: PATH_Y + 0.5,
+              type: tower.type,
+              createdAt: now,
+            });
+
+            // Apply damage to enemy
+            updatedEnemies = updatedEnemies.map(e => {
+              if (e.id === closestEnemy!.id) {
+                // Armored enemies take 50% less damage from basic towers
+                let damage = tower.damage;
+                if (e.type === 'armored' && tower.type === 'basic') {
+                  damage = Math.floor(damage * 0.5);
+                }
+                // Fire does extra damage to tanks
+                if (e.type === 'tank' && tower.type === 'fire') {
+                  damage = Math.floor(damage * 1.5);
+                }
+                const newHp = e.hp - damage;
+                const frozen = tower.type === 'ice' ? now + 2000 : e.frozen;
+                return { ...e, hp: newHp, frozen };
+              }
+              return e;
+            });
+            newTowers.push({ ...tower, lastFire: now });
+          } else {
+            newTowers.push(tower);
+          }
+        });
+        
+        // Update towers and projectiles
+        if (newTowers.some((t, i) => t.lastFire !== currentTowers[i]?.lastFire)) {
+          setTowers(newTowers);
+        }
+        if (newProjectiles.length > 0) {
+          setProjectiles(prev => [...prev.filter(p => now - p.createdAt < 200), ...newProjectiles]);
+        }
+
+        // Check for dead enemies and passed enemies
+        const alive = updatedEnemies.filter(e => {
+          if (e.hp <= 0) {
+            setGold(g => g + e.reward);
+            setScore(s => s + e.reward * 5);
+            return false;
+          }
+          if (e.x >= GRID_WIDTH) {
+            setLives(l => {
+              const damage = e.type === 'boss' ? 5 : e.type === 'tank' ? 2 : 1;
+              const newLives = l - damage;
+              if (newLives <= 0) {
+                setGameOver(true);
+                saveScore(scoreRef.current);
+              }
+              return Math.max(0, newLives);
+            });
+            return false;
+          }
+          return true;
+        });
+
+        if (alive.length === 0 && updatedEnemies.length > 0) {
+          setIsPlaying(false);
+          setScore(s => s + waveRef.current * 100);
+          setGold(g => g + waveRef.current * 25);
+        }
+
+        return alive;
+      });
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
@@ -435,19 +555,12 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
 
   const currentTowerType = TOWER_TYPES[selectedTower];
 
-  // Pre-create tower and enemy maps for O(1) lookup
+  // Pre-create tower map for O(1) lookup
   const towerMap = new Map(towers.map(t => [`${t.x},${t.y}`, t]));
-  const enemyMap = new Map<string, Enemy>();
-  enemies.forEach(e => {
-    const x = Math.floor(e.x);
-    if (x >= 0 && x < GRID_WIDTH) {
-      enemyMap.set(`${x},${PATH_Y}`, e);
-    }
-  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-2xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-border bg-gradient-to-r from-orange-500/10 to-red-500/10">
           <div className="flex items-center gap-3">
@@ -461,8 +574,8 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
           <div className="flex items-center gap-2">
             <Trophy className="h-4 w-4 text-yellow-500" />
             <span className="text-xs">{highScore}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose}>
-              <X className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+              <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
@@ -503,9 +616,9 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
         </div>
 
         {/* Game Grid */}
-        <div className="p-2">
+        <div className="p-2 relative">
           <div 
-            className="grid gap-0.5 bg-secondary/30 p-1 rounded-lg"
+            className="grid gap-0.5 bg-secondary/30 p-1 rounded-lg relative"
             style={{ gridTemplateColumns: `repeat(${GRID_WIDTH}, 1fr)` }}
           >
             {Array.from({ length: GRID_WIDTH * GRID_HEIGHT }).map((_, idx) => {
@@ -514,27 +627,36 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
               const key = `${x},${y}`;
               const tower = towerMap.get(key);
               const isPath = y === PATH_Y;
-              const enemy = isPath ? enemyMap.get(key) : undefined;
 
               return (
                 <GridCell
                   key={idx}
                   isPath={isPath}
                   tower={tower}
-                  enemy={enemy}
-                  gameTimeRef={gameTime}
                   onClick={() => !gameOver && !isPath && placeTower(x, y)}
                 />
               );
             })}
+            
+            {/* Render enemies on top of grid */}
+            {enemies.map(enemy => (
+              <EnemyComponent key={enemy.id} enemy={enemy} gameTime={gameTime} />
+            ))}
+            
+            {/* Render projectiles */}
+            {projectiles.map(p => (
+              <ProjectileComponent key={p.id} projectile={p} gameTime={gameTime} />
+            ))}
           </div>
         </div>
 
         {/* Enemy Legend */}
-        <div className="px-3 pb-1 flex justify-center gap-3 text-xs text-muted-foreground">
+        <div className="px-3 pb-1 flex justify-center gap-2 text-xs text-muted-foreground flex-wrap">
           <span>👾 Normální</span>
           <span>🦇 Rychlý</span>
           <span>🤖 Tank</span>
+          <span>💚 Léčitel</span>
+          <span>🛡️ Obrněný</span>
           <span>👹 Boss</span>
         </div>
 

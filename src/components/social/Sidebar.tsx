@@ -1,4 +1,4 @@
-import { Home, Search, Bell, MessageCircle, Bookmark, User, Settings, LogOut } from 'lucide-react';
+import { Home, Search, Bell, MessageCircle, Bookmark, User, Settings, LogOut, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ const navItems = [
   { icon: Search, label: 'Hledat', path: '/search' },
   { icon: Bell, label: 'Oznámení', path: '/notifications' },
   { icon: MessageCircle, label: 'Zprávy', path: '/messages' },
+  { icon: Users, label: 'Skupiny', path: '/groups' },
   { icon: Bookmark, label: 'Uloženo', path: '/saved' },
   { icon: User, label: 'Profil', path: '/profile' },
   { icon: Settings, label: 'Nastavení', path: '/settings' },
