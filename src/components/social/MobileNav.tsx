@@ -1,11 +1,11 @@
-import { Home, Search, Bell, MessageCircle, User } from 'lucide-react';
+import { Home, Search, Bell, MessageCircle, User, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { icon: Home, label: 'Domů', path: '/' },
   { icon: Search, label: 'Hledat', path: '/search' },
-  { icon: Bell, label: 'Oznámení', path: '/notifications' },
+  { icon: Users, label: 'Skupiny', path: '/groups' },
   { icon: MessageCircle, label: 'Zprávy', path: '/messages' },
   { icon: User, label: 'Profil', path: '/profile' },
 ];

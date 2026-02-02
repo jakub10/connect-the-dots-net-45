@@ -10,10 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Moon, Shield, LogOut, Lock, Bot } from 'lucide-react';
+import { Bell, Moon, Shield, LogOut, Lock, Crown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { AvatarBuilder } from '@/components/profile/AvatarBuilder';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Profile {
   username: string;
@@ -24,6 +25,7 @@ interface Profile {
 const Settings = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { activateVIP, isVIP } = useUserRole();
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [notifications, setNotifications] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -38,8 +40,8 @@ const Settings = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
-  const [chatbotApiKey, setChatbotApiKey] = useState('');
-  const [savingApiKey, setSavingApiKey] = useState(false);
+  const [vipCode, setVipCode] = useState('');
+  const [activatingVIP, setActivatingVIP] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -126,34 +128,13 @@ const Settings = () => {
     setChangingPassword(false);
   };
 
-  const handleSaveApiKey = async () => {
-    if (!chatbotApiKey.trim()) {
-      toast({
-        title: 'Chyba',
-        description: 'API klíč nemůže být prázdný.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSavingApiKey(true);
-    // Uložíme API klíč do localStorage (v budoucnu lze přesunout do Supabase)
-    localStorage.setItem('chatbot_api_key', chatbotApiKey);
-    
-    toast({
-      title: 'Úspěch',
-      description: 'API klíč chatbota byl uložen.',
-    });
-    setSavingApiKey(false);
+  const handleActivateVIP = async () => {
+    if (!vipCode.trim()) return;
+    setActivatingVIP(true);
+    await activateVIP(vipCode.trim());
+    setActivatingVIP(false);
+    setVipCode('');
   };
-
-  // Načtení API klíče při startu
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem('chatbot_api_key');
-    if (savedApiKey) {
-      setChatbotApiKey(savedApiKey);
-    }
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -281,34 +262,32 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          {/* Grok API */}
+          {/* VIP Activation */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Grok API (xAI)
+                <Crown className="h-5 w-5 text-yellow-500" />
+                VIP Aktivace
               </CardTitle>
-              <CardDescription>Nastav API klíč pro Grok chatbota</CardDescription>
+              <CardDescription>Aktivuj VIP pomocí kódu</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="grok-api">Grok API klíč</Label>
+                <Label htmlFor="vip-code">VIP kód</Label>
                 <Input
-                  id="grok-api"
+                  id="vip-code"
                   type="password"
-                  value={chatbotApiKey}
-                  onChange={(e) => setChatbotApiKey(e.target.value)}
-                  placeholder="xai-xxxxxxxxxxxxxxxxxxxxxxxx"
+                  value={vipCode}
+                  onChange={(e) => setVipCode(e.target.value)}
+                  placeholder="Zadej VIP kód..."
                 />
-                <p className="text-xs text-muted-foreground">
-                  Získej API klíč na <a href="https://console.x.ai" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">console.x.ai</a>
-                </p>
               </div>
               <Button 
-                onClick={handleSaveApiKey} 
-                disabled={savingApiKey || !chatbotApiKey.trim()}
+                onClick={handleActivateVIP} 
+                disabled={activatingVIP || !vipCode.trim()}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600"
               >
-                {savingApiKey ? 'Ukládám...' : 'Uložit API klíč'}
+                {activatingVIP ? 'Aktivuji...' : 'Aktivovat VIP'}
               </Button>
             </CardContent>
           </Card>

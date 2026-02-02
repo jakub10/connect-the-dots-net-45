@@ -4,13 +4,14 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bot, Send, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/groq-chat`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
 export function AIChatbot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -169,7 +170,15 @@ export function AIChatbot() {
                         : 'bg-secondary rounded-bl-md'
                     )}
                   >
-                    {msg.content || (isLoading && i === messages.length - 1 && (
+                    {msg.content ? (
+                      msg.role === 'assistant' ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        msg.content
+                      )
+                    ) : (isLoading && i === messages.length - 1 && (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ))}
                   </div>
