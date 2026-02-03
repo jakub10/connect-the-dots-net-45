@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Trash2, Crown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { formatDistanceToNow } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -33,6 +34,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { getBackgroundClass, PostBackgroundStyle, VIPBadge } from './VIPPostFeatures';
+import { cn } from '@/lib/utils';
 
 interface PostCardProps {
   post: {
@@ -41,6 +44,7 @@ interface PostCardProps {
     image_url: string | null;
     created_at: string;
     user_id: string;
+    background_style?: PostBackgroundStyle;
     profile?: {
       username: string;
       full_name: string;
@@ -49,6 +53,7 @@ interface PostCardProps {
     likes_count?: number;
     comments_count?: number;
     is_liked?: boolean;
+    is_vip_user?: boolean;
   };
   onLikeChange?: () => void;
   onPostDeleted?: () => void;
@@ -80,8 +85,11 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
   const [deleting, setDeleting] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isCreator } = useUserRole();
 
   const isOwnPost = user?.id === post.user_id;
+  const canDelete = isOwnPost || isCreator;
+  const bgClass = getBackgroundClass(post.background_style || null);
 
   const handleLike = async () => {
     if (!user) {
@@ -164,7 +172,7 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
   };
 
   const handleDelete = async () => {
-    if (!user || !isOwnPost) return;
+    if (!user || !canDelete) return;
 
     setDeleting(true);
     try {
@@ -176,11 +184,18 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
         }
       }
 
-      const { error } = await supabase
+      // Creator can delete any post, user can only delete their own
+      const query = supabase
         .from('posts')
         .delete()
-        .eq('id', post.id)
-        .eq('user_id', user.id);
+        .eq('id', post.id);
+      
+      // Only add user_id filter if not creator (RLS handles it but explicit is safer)
+      if (!isCreator) {
+        query.eq('user_id', user.id);
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
 
@@ -300,7 +315,7 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
 
   return (
     <>
-      <article className="bg-card rounded-xl border border-border p-4 post-card animate-fadeIn">
+      <article className={cn("rounded-xl border border-border p-4 post-card animate-fadeIn", bgClass)}>
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <Link to={`/profile/${post.user_id}`} className="flex items-center gap-3 hover:opacity-80">
@@ -309,7 +324,10 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
               <AvatarFallback>{post.profile?.full_name?.[0] || 'U'}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold">{post.profile?.full_name || 'Uživatel'}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-semibold">{post.profile?.full_name || 'Uživatel'}</p>
+                {post.is_vip_user && <VIPBadge />}
+              </div>
               <p className="text-sm text-muted-foreground">
                 @{post.profile?.username || 'user'} · {timeAgo}
               </p>
@@ -331,13 +349,13 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
                 <Bookmark className="h-4 w-4 mr-2" />
                 {isSaved ? 'Odebrat z uložených' : 'Uložit příspěvek'}
               </DropdownMenuItem>
-              {isOwnPost && (
+              {canDelete && (
                 <DropdownMenuItem 
                   onClick={() => setShowDeleteDialog(true)}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Smazat příspěvek
+                  {isCreator && !isOwnPost ? 'Smazat (Tvůrce)' : 'Smazat příspěvek'}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>

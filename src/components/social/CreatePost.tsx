@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Image, Smile, MapPin, Send, X, Loader2 } from 'lucide-react';
+import { Image, Smile, MapPin, Send, X, Loader2, Sparkles } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,8 +7,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { 
+  VIPBackgroundPicker, 
+  VIPEmojiPicker, 
+  PostBackgroundStyle, 
+  getBackgroundClass,
+  VIPBadge 
+} from './VIPPostFeatures';
+import { cn } from '@/lib/utils';
 
 interface CreatePostProps {
   onPostCreated?: () => void;
@@ -24,9 +33,11 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [backgroundStyle, setBackgroundStyle] = useState<PostBackgroundStyle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isVIP } = useUserRole();
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,11 +126,13 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
           user_id: user.id,
           content: content.trim(),
           image_url: imageUrl,
+          background_style: isVIP ? backgroundStyle : null,
         });
 
       if (error) throw error;
 
       setContent('');
+      setBackgroundStyle(null);
       removeImage();
       toast({
         title: 'Úspěch!',
@@ -137,8 +150,11 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
     }
   };
 
+  // Preview background style
+  const previewBgClass = isVIP && backgroundStyle ? getBackgroundClass(backgroundStyle) : 'bg-card';
+
   return (
-    <div className="bg-card rounded-xl border border-border p-4 mb-4 animate-fadeIn">
+    <div className={cn("rounded-xl border border-border p-4 mb-4 animate-fadeIn", previewBgClass)}>
       <div className="flex gap-3">
         <Avatar className="h-10 w-10">
           <AvatarImage src={currentProfile?.avatar_url || ''} />
@@ -210,6 +226,19 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
                 <MapPin className="h-5 w-5" />
               </Button>
+              
+              {/* VIP Features */}
+              {isVIP && (
+                <>
+                  <VIPBackgroundPicker 
+                    selectedBackground={backgroundStyle} 
+                    onSelect={setBackgroundStyle} 
+                  />
+                  <VIPEmojiPicker 
+                    onEmojiSelect={(emoji) => setContent(prev => prev + emoji)} 
+                  />
+                </>
+              )}
             </div>
             <Button
               onClick={handleSubmit}
