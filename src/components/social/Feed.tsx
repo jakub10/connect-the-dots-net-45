@@ -5,6 +5,7 @@ import { PostCard } from './PostCard';
 import { CreatePost } from './CreatePost';
 import { Stories } from './Stories';
 import { Loader2 } from 'lucide-react';
+import { PostBackgroundStyle } from './VIPPostFeatures';
 
 interface Post {
   id: string;
@@ -13,6 +14,7 @@ interface Post {
   image_url: string | null;
   created_at: string;
   updated_at: string;
+  background_style: PostBackgroundStyle;
 }
 
 interface Profile {
@@ -26,6 +28,7 @@ interface PostWithDetails extends Post {
   likes_count?: number;
   comments_count?: number;
   is_liked?: boolean;
+  is_vip_user?: boolean;
 }
 
 interface FeedProps {
@@ -99,13 +102,24 @@ export function Feed({ currentProfile }: FeedProps) {
         commentsCountMap.set(comment.post_id, (commentsCountMap.get(comment.post_id) || 0) + 1);
       });
 
+      // Check which users are VIP
+      const { data: vipRolesData } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'vip')
+        .in('user_id', userIds);
+
+      const vipUsersSet = new Set(vipRolesData?.map(r => r.user_id) || []);
+
       // Combine all data
       const enrichedPosts: PostWithDetails[] = postsData.map((post) => ({
         ...post,
+        background_style: post.background_style as PostBackgroundStyle,
         profile: profilesMap.get(post.user_id) as Profile | undefined,
         likes_count: likesCountMap.get(post.id) || 0,
         comments_count: commentsCountMap.get(post.id) || 0,
         is_liked: userLikesSet.has(post.id),
+        is_vip_user: vipUsersSet.has(post.user_id),
       }));
 
       setPosts(enrichedPosts);

@@ -47,6 +47,30 @@ export type Database = {
         }
         Relationships: []
       }
+      banned_users: {
+        Row: {
+          banned_at: string | null
+          banned_by: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          banned_at?: string | null
+          banned_by: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          banned_at?: string | null
+          banned_by?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -355,6 +379,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          background_style: string | null
           content: string
           created_at: string
           id: string
@@ -363,6 +388,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          background_style?: string | null
           content: string
           created_at?: string
           id?: string
@@ -371,6 +397,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          background_style?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -651,6 +678,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      creator_ban_user: {
+        Args: { _reason?: string; _user_id: string }
+        Returns: boolean
+      }
+      creator_delete_post: { Args: { _post_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -663,6 +695,7 @@ export type Database = {
         Returns: boolean
       }
       is_group_public: { Args: { _group_id: string }; Returns: boolean }
+      is_user_banned: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "user" | "vip" | "creator"
