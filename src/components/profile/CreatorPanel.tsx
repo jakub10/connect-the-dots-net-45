@@ -63,15 +63,17 @@ export function CreatorPanel() {
     return null;
   }
 
-  // Hidden button for non-creators - absolute positioned at bottom right
+  // Hidden button for non-creators - positioned at bottom of profile page
   if (!isCreator) {
     return (
       <>
-        <button
-          onClick={() => setShowPasswordDialog(true)}
-          className="fixed bottom-4 right-4 w-8 h-8 opacity-0 hover:opacity-10 transition-opacity z-50"
-          aria-hidden="true"
-        />
+        <div className="flex justify-end mt-8">
+          <button
+            onClick={() => setShowPasswordDialog(true)}
+            className="w-12 h-12 opacity-0 hover:opacity-5 transition-opacity"
+            aria-hidden="true"
+          />
+        </div>
         
         <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
           <DialogContent>
