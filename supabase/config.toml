@@ -2,3 +2,9 @@ project_id = "uhlkuofwittcveeyyjzz"
 
 [functions.groq-chat]
 verify_jwt = false
+
+[functions.ai-moderation]
+verify_jwt = false
+
+[functions.ai-chat]
+verify_jwt = false

@@ -12,15 +12,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3, Trophy } from 'lucide-react';
+import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3, Trophy, Crown, ShoppingCart } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { Achievements } from '@/components/profile/Achievements';
 import { VIPActivation } from '@/components/profile/VIPActivation';
+import { VIPShop } from '@/components/profile/VIPShop';
 import { CreatorPanel } from '@/components/profile/CreatorPanel';
 import { useAchievements } from '@/hooks/useAchievements';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Crown } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Profile {
   username: string;
@@ -42,8 +43,9 @@ const Profile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Initialize achievements hook
+  // Initialize achievements hook and get VIP status
   useAchievements();
+  const { isVIP } = useUserRole();
 
   // Edit form state
   const [fullName, setFullName] = useState('');
@@ -345,15 +347,21 @@ const Profile = () => {
 
           {/* Tabs for content */}
           <Tabs defaultValue="achievements" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className={isVIP ? "grid w-full grid-cols-4" : "grid w-full grid-cols-3"}>
               <TabsTrigger value="achievements" className="gap-2">
                 <Trophy className="h-4 w-4" />
-                Achievementy
+                <span className="hidden sm:inline">Achievementy</span>
               </TabsTrigger>
               <TabsTrigger value="vip" className="gap-2">
                 <Crown className="h-4 w-4" />
                 VIP
               </TabsTrigger>
+              {isVIP && (
+                <TabsTrigger value="shop" className="gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="hidden sm:inline">Obchod</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="posts">Příspěvky</TabsTrigger>
             </TabsList>
             
@@ -364,6 +372,12 @@ const Profile = () => {
             <TabsContent value="vip" className="mt-4">
               <VIPActivation />
             </TabsContent>
+
+            {isVIP && (
+              <TabsContent value="shop" className="mt-4">
+                <VIPShop />
+              </TabsContent>
+            )}
             
             <TabsContent value="posts" className="mt-4">
               <Card>
