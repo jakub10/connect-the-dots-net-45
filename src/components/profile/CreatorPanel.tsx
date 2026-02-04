@@ -3,17 +3,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 interface BannedUser {
   id: string;
   user_id: string;
   reason: string | null;
   banned_at: string;
+}
+
+interface FlaggedNotification {
+  id: string;
+  post_id: string | null;
+  message: string | null;
+  created_at: string;
+  read: boolean;
 }
 
 export function CreatorPanel() {
@@ -26,9 +37,13 @@ export function CreatorPanel() {
   const [userIdToBan, setUserIdToBan] = useState('');
   const [banReason, setBanReason] = useState('');
   const [postIdToDelete, setPostIdToDelete] = useState('');
+  const [postIdToView, setPostIdToView] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
+  const [flaggedPosts, setFlaggedPosts] = useState<FlaggedNotification[]>([]);
   const [loadingBanned, setLoadingBanned] = useState(false);
+  const [loadingFlagged, setLoadingFlagged] = useState(false);
+  const [runningModeration, setRunningModeration] = useState(false);
 
   const fetchBannedUsers = async () => {
     if (!isCreator) return;
@@ -44,11 +59,30 @@ export function CreatorPanel() {
     setLoadingBanned(false);
   };
 
+  const fetchFlaggedPosts = async () => {
+    if (!isCreator || !user) return;
+    setLoadingFlagged(true);
+    
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id, post_id, message, created_at, read')
+      .eq('user_id', user.id)
+      .eq('type', 'moderation')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (!error && data) {
+      setFlaggedPosts(data);
+    }
+    setLoadingFlagged(false);
+  };
+
   useEffect(() => {
     if (isCreator) {
       fetchBannedUsers();
+      fetchFlaggedPosts();
     }
-  }, [isCreator]);
+  }, [isCreator, user]);
 
   const handleActivate = async () => {
     if (!password.trim()) return;
@@ -61,15 +95,54 @@ export function CreatorPanel() {
     setPassword('');
   };
 
-  const deletePost = async () => {
-    if (!postIdToDelete.trim() || !isCreator) return;
+  const runAIModeration = async () => {
+    setRunningModeration(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-moderation`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Moderation failed');
+      }
+
+      toast({
+        title: '🤖 AI Moderace dokončena',
+        description: `Analyzováno ${result.analyzed_count} příspěvků, nalezeno ${result.flagged?.length || 0} problémových.`,
+      });
+
+      // Refresh flagged posts
+      await fetchFlaggedPosts();
+    } catch (error: any) {
+      toast({
+        title: 'Chyba',
+        description: error.message || 'Nepodařilo se spustit moderaci.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRunningModeration(false);
+    }
+  };
+
+  const deletePost = async (postId?: string) => {
+    const idToDelete = postId || postIdToDelete.trim();
+    if (!idToDelete || !isCreator) return;
     setDeleting(true);
     
     try {
       const { error } = await supabase
         .from('posts')
         .delete()
-        .eq('id', postIdToDelete.trim());
+        .eq('id', idToDelete);
 
       if (error) throw error;
 
@@ -78,6 +151,9 @@ export function CreatorPanel() {
         description: 'Příspěvek byl úspěšně odstraněn.',
       });
       setPostIdToDelete('');
+      
+      // Remove from flagged list if present
+      setFlaggedPosts(prev => prev.filter(fp => fp.post_id !== idToDelete));
     } catch (error: any) {
       toast({
         title: 'Chyba',
@@ -87,6 +163,20 @@ export function CreatorPanel() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  const dismissFlaggedPost = async (notificationId: string) => {
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+    
+    setFlaggedPosts(prev => prev.filter(fp => fp.id !== notificationId));
+    
+    toast({
+      title: '✓ Označeno jako vyřešené',
+      description: 'Upozornění bylo odstraněno.',
+    });
   };
 
   const banUser = async () => {
@@ -210,118 +300,275 @@ export function CreatorPanel() {
           Administrátorské nástroje pro správu sítě
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Delete Post */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Trash2 className="h-4 w-4 text-red-500" />
-            Smazat příspěvek
-          </label>
-          <div className="flex gap-2">
-            <Input
-              value={postIdToDelete}
-              onChange={(e) => setPostIdToDelete(e.target.value)}
-              placeholder="ID příspěvku..."
-              className="flex-1"
-            />
-            <Button 
-              variant="destructive" 
-              onClick={deletePost}
-              disabled={!postIdToDelete.trim() || deleting}
-            >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            </Button>
-          </div>
-        </div>
+      <CardContent>
+        <Tabs defaultValue="moderation" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-4">
+            <TabsTrigger value="moderation" className="gap-1">
+              <Bot className="h-4 w-4" />
+              <span className="hidden sm:inline">AI Moderace</span>
+            </TabsTrigger>
+            <TabsTrigger value="posts" className="gap-1">
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Příspěvky</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="gap-1">
+              <Ban className="h-4 w-4" />
+              <span className="hidden sm:inline">Uživatelé</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Ban User */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium flex items-center gap-2">
-            <Ban className="h-4 w-4 text-orange-500" />
-            Blokovat uživatele
-          </label>
-          <div className="flex flex-col gap-2">
-            <Input
-              value={userIdToBan}
-              onChange={(e) => setUserIdToBan(e.target.value)}
-              placeholder="ID uživatele..."
-            />
-            <Input
-              value={banReason}
-              onChange={(e) => setBanReason(e.target.value)}
-              placeholder="Důvod (volitelné)..."
-            />
-            <Button 
-              variant="outline" 
-              className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
-              onClick={banUser}
-              disabled={!userIdToBan.trim() || deleting}
-            >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
-              Zablokovat
-            </Button>
-          </div>
-        </div>
-
-        {/* Banned Users List */}
-        {bannedUsers.length > 0 && (
-          <div className="space-y-2">
+          {/* AI Moderation Tab */}
+          <TabsContent value="moderation" className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium flex items-center gap-2">
-                <UserX className="h-4 w-4 text-red-500" />
-                Zablokovaní uživatelé ({bannedUsers.length})
-              </label>
+              <div>
+                <h4 className="font-medium flex items-center gap-2">
+                  <Bot className="h-4 w-4 text-blue-500" />
+                  AI Kontrola obsahu
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Automatická kontrola nevhodného obsahu
+                </p>
+              </div>
               <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={fetchBannedUsers}
-                disabled={loadingBanned}
+                onClick={runAIModeration}
+                disabled={runningModeration}
+                variant="outline"
+                className="gap-2"
               >
-                <RefreshCw className={`h-4 w-4 ${loadingBanned ? 'animate-spin' : ''}`} />
+                {runningModeration ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Bot className="h-4 w-4" />
+                )}
+                Spustit kontrolu
               </Button>
             </div>
-            <div className="max-h-40 overflow-y-auto space-y-2">
-              {bannedUsers.map((banned) => (
-                <div key={banned.id} className="flex items-center justify-between bg-muted/30 rounded-lg p-2 text-sm">
-                  <div className="flex-1 truncate">
-                    <span className="font-mono text-xs">{banned.user_id.slice(0, 8)}...</span>
-                    {banned.reason && (
-                      <span className="text-muted-foreground ml-2">({banned.reason})</span>
-                    )}
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => unbanUser(banned.user_id)}
-                    className="text-green-500 hover:text-green-400 hover:bg-green-500/10"
-                  >
-                    Odblokovat
-                  </Button>
+
+            {/* Flagged Posts */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Flag className="h-4 w-4 text-red-500" />
+                  Nahlášené příspěvky ({flaggedPosts.length})
+                </label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={fetchFlaggedPosts}
+                  disabled={loadingFlagged}
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingFlagged ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+              
+              {flaggedPosts.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Žádné nahlášené příspěvky</p>
                 </div>
-              ))}
+              ) : (
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {flaggedPosts.map((fp) => (
+                    <div key={fp.id} className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{fp.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Post ID: <code className="bg-muted px-1 rounded">{fp.post_id?.slice(0, 8)}...</code>
+                          </p>
+                        </div>
+                        <Badge variant="destructive" className="text-xs shrink-0">
+                          AI
+                        </Badge>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => setPostIdToView(fp.post_id || '')}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Zobrazit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => deletePost(fp.post_id || '')}
+                          disabled={deleting}
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Smazat
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => dismissFlaggedPost(fp.id)}
+                        >
+                          ✓
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+
+            {/* View Post by ID */}
+            <div className="space-y-2 pt-4 border-t border-border">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Eye className="h-4 w-4 text-blue-500" />
+                Zobrazit příspěvek podle ID
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={postIdToView}
+                  onChange={(e) => setPostIdToView(e.target.value)}
+                  placeholder="ID příspěvku..."
+                  className="flex-1"
+                />
+                <Button 
+                  variant="outline" 
+                  asChild
+                  disabled={!postIdToView.trim()}
+                >
+                  <Link to={`/post/${postIdToView}`} target="_blank">
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Posts Tab */}
+          <TabsContent value="posts" className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Trash2 className="h-4 w-4 text-red-500" />
+                Smazat příspěvek podle ID
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={postIdToDelete}
+                  onChange={(e) => setPostIdToDelete(e.target.value)}
+                  placeholder="ID příspěvku..."
+                  className="flex-1"
+                />
+                <Button 
+                  variant="destructive" 
+                  onClick={() => deletePost()}
+                  disabled={!postIdToDelete.trim() || deleting}
+                >
+                  {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ID příspěvku najdeš v URL nebo v nahlášených příspěvcích
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users" className="space-y-4">
+            {/* Ban User */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Ban className="h-4 w-4 text-orange-500" />
+                Blokovat uživatele
+              </label>
+              <div className="flex flex-col gap-2">
+                <Input
+                  value={userIdToBan}
+                  onChange={(e) => setUserIdToBan(e.target.value)}
+                  placeholder="ID uživatele..."
+                />
+                <Input
+                  value={banReason}
+                  onChange={(e) => setBanReason(e.target.value)}
+                  placeholder="Důvod (volitelné)..."
+                />
+                <Button 
+                  variant="outline" 
+                  className="border-orange-500 text-orange-500 hover:bg-orange-500/10"
+                  onClick={banUser}
+                  disabled={!userIdToBan.trim() || deleting}
+                >
+                  {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
+                  Zablokovat
+                </Button>
+              </div>
+            </div>
+
+            {/* Banned Users List */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <UserX className="h-4 w-4 text-red-500" />
+                  Zablokovaní uživatelé ({bannedUsers.length})
+                </label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={fetchBannedUsers}
+                  disabled={loadingBanned}
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingBanned ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+              {bannedUsers.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Žádní zablokovaní uživatelé
+                </p>
+              ) : (
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {bannedUsers.map((banned) => (
+                    <div key={banned.id} className="flex items-center justify-between bg-muted/30 rounded-lg p-2 text-sm">
+                      <div className="flex-1 truncate">
+                        <span className="font-mono text-xs">{banned.user_id.slice(0, 8)}...</span>
+                        {banned.reason && (
+                          <span className="text-muted-foreground ml-2">({banned.reason})</span>
+                        )}
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => unbanUser(banned.user_id)}
+                        className="text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                      >
+                        Odblokovat
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Stats */}
-        <div className="pt-4 border-t border-border">
+        <div className="pt-4 mt-4 border-t border-border">
           <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
             <Eye className="h-4 w-4" />
             Přehled
           </h4>
-          <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="grid grid-cols-3 gap-3 text-center">
             <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-2xl font-bold text-purple-500">∞</p>
+              <p className="text-xl font-bold text-purple-500">∞</p>
               <p className="text-xs text-muted-foreground">Oprávnění</p>
             </div>
             <div className="bg-muted/30 rounded-lg p-3">
-              <p className="text-2xl font-bold text-green-500">{bannedUsers.length}</p>
-              <p className="text-xs text-muted-foreground">Zablokovaných</p>
+              <p className="text-xl font-bold text-red-500">{bannedUsers.length}</p>
+              <p className="text-xs text-muted-foreground">Blokovaných</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3">
+              <p className="text-xl font-bold text-orange-500">{flaggedPosts.length}</p>
+              <p className="text-xs text-muted-foreground">Nahlášených</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 p-3 bg-yellow-500/10 rounded-lg text-sm">
+        <div className="flex items-center gap-2 p-3 mt-4 bg-yellow-500/10 rounded-lg text-sm">
           <AlertTriangle className="h-4 w-4 text-yellow-500 flex-shrink-0" />
           <span className="text-muted-foreground">
             Používejte tyto nástroje zodpovědně. Všechny akce jsou zaznamenávány.

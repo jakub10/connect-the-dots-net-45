@@ -184,18 +184,24 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
         }
       }
 
-      // Creator can delete any post, user can only delete their own
-      const query = supabase
-        .from('posts')
-        .delete()
-        .eq('id', post.id);
-      
-      // Only add user_id filter if not creator (RLS handles it but explicit is safer)
-      if (!isCreator) {
-        query.eq('user_id', user.id);
+      // Build and execute delete query - RLS handles permissions
+      let error;
+      if (isCreator && !isOwnPost) {
+        // Creator deleting someone else's post
+        const result = await supabase
+          .from('posts')
+          .delete()
+          .eq('id', post.id);
+        error = result.error;
+      } else {
+        // User deleting their own post
+        const result = await supabase
+          .from('posts')
+          .delete()
+          .eq('id', post.id)
+          .eq('user_id', user.id);
+        error = result.error;
       }
-
-      const { error } = await query;
 
       if (error) throw error;
 
@@ -205,6 +211,7 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
       });
       onPostDeleted?.();
     } catch (error) {
+      console.error('Delete error:', error);
       toast({
         title: 'Chyba',
         description: 'Nepodařilo se smazat příspěvek.',
