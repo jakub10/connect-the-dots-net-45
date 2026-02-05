@@ -1,25 +1,37 @@
 import { useState } from 'react';
-import { Bot, Gamepad2, Brain, MousePointer2 } from 'lucide-react';
+import { Bot, Gamepad2, Brain, MousePointer2, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AIChatWindow } from './AIChatWindow';
 import { SnakeGame } from './SnakeGame';
 import { TowerDefenseGame } from './TowerDefenseGame';
 import { MemoryGame } from './MemoryGame';
 import { ClickerGame } from './ClickerGame';
+import { VIPPuzzleGame } from './VIPPuzzleGame';
+import { AIChatbotModal } from './AIChatbotModal';
+import { useUserRole } from '@/hooks/useUserRole';
 
-type ActiveModal = 'none' | 'ai' | 'snake' | 'tower' | 'memory' | 'clicker';
+type ActiveModal = 'none' | 'ai' | 'snake' | 'tower' | 'memory' | 'clicker' | 'vip-puzzle' | 'chatbot';
 
 export function FloatingGameMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ActiveModal>('none');
+  const { isVIP, isCreator } = useUserRole();
 
-  const menuItems = [
-    { id: 'ai' as const, icon: Bot, label: 'AI Asistent', color: 'bg-gradient-to-br from-violet-500 to-purple-600' },
-    { id: 'snake' as const, icon: Gamepad2, label: 'Snake', color: 'bg-gradient-to-br from-green-500 to-emerald-600' },
-    { id: 'tower' as const, icon: Gamepad2, label: 'Tower Defense', color: 'bg-gradient-to-br from-orange-500 to-red-600' },
-    { id: 'memory' as const, icon: Brain, label: 'Paměť', color: 'bg-gradient-to-br from-blue-500 to-cyan-600' },
-    { id: 'clicker' as const, icon: MousePointer2, label: 'Clicker', color: 'bg-gradient-to-br from-yellow-500 to-orange-600' },
+  const baseMenuItems = [
+    { id: 'chatbot' as const, icon: Bot, label: 'AI Chatbot', color: 'from-blue-500 to-cyan-600' },
+    { id: 'ai' as const, icon: Bot, label: 'AI Asistent (Groq)', color: 'from-violet-500 to-purple-600' },
+    { id: 'snake' as const, icon: Gamepad2, label: 'Snake', color: 'from-green-500 to-emerald-600' },
+    { id: 'tower' as const, icon: Gamepad2, label: 'Tower Defense', color: 'from-orange-500 to-red-600' },
+    { id: 'memory' as const, icon: Brain, label: 'Paměť', color: 'from-blue-500 to-cyan-600' },
+    { id: 'clicker' as const, icon: MousePointer2, label: 'Clicker', color: 'from-yellow-500 to-orange-600' },
   ];
+
+  // VIP exclusive games
+  const vipMenuItems = isVIP || isCreator ? [
+    { id: 'vip-puzzle' as const, icon: Crown, label: 'VIP 2048', color: 'from-amber-500 to-yellow-600', vip: true },
+  ] : [];
+
+  const menuItems = [...baseMenuItems, ...vipMenuItems];
 
   const handleItemClick = (id: ActiveModal) => {
     setActiveModal(id);
@@ -39,7 +51,7 @@ export function FloatingGameMenu() {
               key={item.id}
               onClick={() => handleItemClick(item.id)}
               className={cn(
-                "w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-300 hover:scale-110",
+                "w-12 h-12 rounded-full shadow-lg flex items-center justify-center text-white transition-all duration-300 hover:scale-110 relative bg-gradient-to-br",
                 item.color,
                 isOpen ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
               )}
@@ -47,6 +59,11 @@ export function FloatingGameMenu() {
               title={item.label}
             >
               <item.icon className="h-5 w-5" />
+              {'vip' in item && item.vip && (
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center">
+                  <Crown className="h-2.5 w-2.5 text-amber-900" />
+                </div>
+              )}
             </button>
           ))}
         </div>
@@ -75,10 +92,12 @@ export function FloatingGameMenu() {
 
       {/* Modals */}
       <AIChatWindow isOpen={activeModal === 'ai'} onClose={() => setActiveModal('none')} />
+      <AIChatbotModal isOpen={activeModal === 'chatbot'} onClose={() => setActiveModal('none')} />
       <SnakeGame isOpen={activeModal === 'snake'} onClose={() => setActiveModal('none')} />
       <TowerDefenseGame isOpen={activeModal === 'tower'} onClose={() => setActiveModal('none')} />
       <MemoryGame isOpen={activeModal === 'memory'} onClose={() => setActiveModal('none')} />
       <ClickerGame isOpen={activeModal === 'clicker'} onClose={() => setActiveModal('none')} />
+      <VIPPuzzleGame isOpen={activeModal === 'vip-puzzle'} onClose={() => setActiveModal('none')} />
     </>
   );
 }

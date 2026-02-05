@@ -7,7 +7,7 @@ import { ShoppingCart, Sparkles, Palette, Crown, Check, Lock, Star } from 'lucid
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { VIP_BACKGROUNDS, VIP_CUSTOM_EMOJIS } from '@/components/social/VIPPostFeatures';
+import { VIP_BACKGROUNDS, VIP_IMAGE_EMOJIS } from '@/components/social/VIPPostFeatures';
 import { cn } from '@/lib/utils';
 
 interface UserShopData {
@@ -97,7 +97,7 @@ export function VIPShop() {
   const isOwned = (itemId: string) => userData.unlocked_items.includes(itemId);
 
   const premiumBackgrounds = VIP_BACKGROUNDS.filter(bg => bg.cost && bg.cost > 0);
-  const premiumEmojis = VIP_CUSTOM_EMOJIS.filter(e => e.cost > 0);
+  const premiumEmojis = VIP_IMAGE_EMOJIS.filter(e => e.cost > 0);
 
   if (loading) {
     return (
@@ -229,8 +229,8 @@ export function VIPShop() {
                     )}
                   >
                     {/* Emoji preview */}
-                    <div className="h-16 w-16 mx-auto mb-3 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-2xl font-bold">
-                      {emoji.name.charAt(4)}
+                    <div className="h-16 w-16 mx-auto mb-3 rounded-xl bg-muted flex items-center justify-center">
+                      <img src={emoji.url} alt={emoji.name} className="h-12 w-12" />
                     </div>
                     
                     <h4 className="font-medium text-sm mb-1 truncate">{emoji.name}</h4>

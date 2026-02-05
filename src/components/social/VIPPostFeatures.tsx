@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Palette, Check, ShoppingCart, Lock, Crown } from 'lucide-react';
+import { Sparkles, Palette, Check, Lock, Crown, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -49,25 +49,38 @@ export const VIP_BACKGROUNDS: { id: PostBackgroundStyle; name: string; className
   { id: 'animated-wave', name: '🌊 Vlnový', className: 'vip-animated-wave', animated: true, cost: 150 },
 ];
 
-// VIP exclusive emojis (regular)
-export const VIP_EMOJIS = [
-  '👑', '💎', '🌟', '✨', '🔮', '🦋', '🌈', '💫', '🎭', '🎪',
-  '🏆', '💖', '🌸', '🍾', '🎉', '🪐', '🌙', '⭐', '🌺', '🦄',
-  '🔥', '💅', '👸', '🤴', '🎀', '💝', '🌹', '🪷', '🧿', '🪬',
-];
-
-// Custom VIP emoji images (unique to this platform)
-export const VIP_CUSTOM_EMOJIS: { id: string; name: string; src: string; cost: number }[] = [
-  { id: 'vip-crown', name: 'VIP Koruna', src: '/placeholder.svg', cost: 0 },
-  { id: 'vip-diamond', name: 'VIP Diamant', src: '/placeholder.svg', cost: 25 },
-  { id: 'vip-fire', name: 'VIP Oheň', src: '/placeholder.svg', cost: 25 },
-  { id: 'vip-star', name: 'VIP Hvězda', src: '/placeholder.svg', cost: 50 },
-  { id: 'vip-heart', name: 'VIP Srdce', src: '/placeholder.svg', cost: 50 },
-  { id: 'vip-rocket', name: 'VIP Raketa', src: '/placeholder.svg', cost: 75 },
-  { id: 'vip-unicorn', name: 'VIP Jednorožec', src: '/placeholder.svg', cost: 100 },
-  { id: 'vip-rainbow', name: 'VIP Duha', src: '/placeholder.svg', cost: 100 },
-  { id: 'vip-galaxy', name: 'VIP Galaxie', src: '/placeholder.svg', cost: 150 },
-  { id: 'vip-legendary', name: 'VIP Legendární', src: '/placeholder.svg', cost: 200 },
+// VIP exclusive image emojis - actual image URLs (not text characters)
+export const VIP_IMAGE_EMOJIS = [
+  { id: 'star-gold', name: 'Zlatá hvězda', url: 'https://em-content.zobj.net/source/apple/391/star_2b50.png', cost: 0 },
+  { id: 'crown', name: 'Koruna', url: 'https://em-content.zobj.net/source/apple/391/crown_1f451.png', cost: 0 },
+  { id: 'diamond', name: 'Diamant', url: 'https://em-content.zobj.net/source/apple/391/gem-stone_1f48e.png', cost: 0 },
+  { id: 'fire', name: 'Oheň', url: 'https://em-content.zobj.net/source/apple/391/fire_1f525.png', cost: 0 },
+  { id: 'rocket', name: 'Raketa', url: 'https://em-content.zobj.net/source/apple/391/rocket_1f680.png', cost: 0 },
+  { id: 'rainbow', name: 'Duha', url: 'https://em-content.zobj.net/source/apple/391/rainbow_1f308.png', cost: 25 },
+  { id: 'unicorn', name: 'Jednorožec', url: 'https://em-content.zobj.net/source/apple/391/unicorn_1f984.png', cost: 25 },
+  { id: 'butterfly', name: 'Motýl', url: 'https://em-content.zobj.net/source/apple/391/butterfly_1f98b.png', cost: 25 },
+  { id: 'heart-fire', name: 'Srdce v plamenech', url: 'https://em-content.zobj.net/source/apple/391/heart-on-fire_2764-fe0f-200d-1f525.png', cost: 50 },
+  { id: 'sparkles', name: 'Třpytky', url: 'https://em-content.zobj.net/source/apple/391/sparkles_2728.png', cost: 0 },
+  { id: 'crystal-ball', name: 'Křišťálová koule', url: 'https://em-content.zobj.net/source/apple/391/crystal-ball_1f52e.png', cost: 50 },
+  { id: 'shooting-star', name: 'Padající hvězda', url: 'https://em-content.zobj.net/source/apple/391/shooting-star_1f320.png', cost: 50 },
+  { id: 'glowing-star', name: 'Zářící hvězda', url: 'https://em-content.zobj.net/source/apple/391/glowing-star_1f31f.png', cost: 0 },
+  { id: 'party', name: 'Párty', url: 'https://em-content.zobj.net/source/apple/391/party-popper_1f389.png', cost: 0 },
+  { id: 'confetti', name: 'Konfety', url: 'https://em-content.zobj.net/source/apple/391/confetti-ball_1f38a.png', cost: 25 },
+  { id: 'trophy', name: 'Trofej', url: 'https://em-content.zobj.net/source/apple/391/trophy_1f3c6.png', cost: 75 },
+  { id: 'medal', name: 'Medaile', url: 'https://em-content.zobj.net/source/apple/391/1st-place-medal_1f947.png', cost: 75 },
+  { id: 'cool', name: 'Cool', url: 'https://em-content.zobj.net/source/apple/391/smiling-face-with-sunglasses_1f60e.png', cost: 0 },
+  { id: 'nerd', name: 'Nerd', url: 'https://em-content.zobj.net/source/apple/391/nerd-face_1f913.png', cost: 25 },
+  { id: 'angel', name: 'Anděl', url: 'https://em-content.zobj.net/source/apple/391/smiling-face-with-halo_1f607.png', cost: 50 },
+  { id: 'alien', name: 'Mimozemšťan', url: 'https://em-content.zobj.net/source/apple/391/alien_1f47d.png', cost: 75 },
+  { id: 'robot', name: 'Robot', url: 'https://em-content.zobj.net/source/apple/391/robot_1f916.png', cost: 75 },
+  { id: 'cat-heart', name: 'Kočka srdce', url: 'https://em-content.zobj.net/source/apple/391/smiling-cat-with-heart-eyes_1f63b.png', cost: 50 },
+  { id: 'dragon', name: 'Drak', url: 'https://em-content.zobj.net/source/apple/391/dragon-face_1f432.png', cost: 100 },
+  { id: 'phoenix', name: 'Fénix', url: 'https://em-content.zobj.net/source/apple/391/phoenix_1f426-200d-1f525.png', cost: 150 },
+  { id: 'gaming', name: 'Hry', url: 'https://em-content.zobj.net/source/apple/391/video-game_1f3ae.png', cost: 0 },
+  { id: 'music', name: 'Hudba', url: 'https://em-content.zobj.net/source/apple/391/musical-notes_1f3b6.png', cost: 0 },
+  { id: 'pizza', name: 'Pizza', url: 'https://em-content.zobj.net/source/apple/391/pizza_1f355.png', cost: 25 },
+  { id: 'ice-cream', name: 'Zmrzlina', url: 'https://em-content.zobj.net/source/apple/391/ice-cream_1f368.png', cost: 25 },
+  { id: 'rainbow-flag', name: 'Duhová vlajka', url: 'https://em-content.zobj.net/source/apple/391/rainbow-flag_1f3f3-fe0f-200d-1f308.png', cost: 100 },
 ];
 
 export function getBackgroundClass(style: PostBackgroundStyle): string {
@@ -214,6 +227,11 @@ export function VIPEmojiPicker({
 }: VIPEmojiPickerProps) {
   const [open, setOpen] = useState(false);
 
+  const isUnlocked = (emoji: typeof VIP_IMAGE_EMOJIS[0]) => {
+    if (emoji.cost === 0) return true;
+    return unlockedEmojis.includes(emoji.id);
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -225,12 +243,12 @@ export function VIPEmojiPicker({
           <Sparkles className="h-5 w-5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-3" align="start">
+      <PopoverContent className="w-80 p-3" align="start">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium text-amber-500">
-              <Sparkles className="h-4 w-4" />
-              VIP Emoji
+              <Star className="h-4 w-4" />
+              VIP Obrázkové Emoji
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Crown className="h-3 w-3 text-amber-500" />
@@ -238,53 +256,52 @@ export function VIPEmojiPicker({
             </div>
           </div>
           
-          {/* Standard VIP emojis */}
+          {/* Free emojis */}
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Exkluzivní emoji</p>
+            <p className="text-xs text-muted-foreground mb-2">Základní</p>
             <div className="grid grid-cols-6 gap-1.5">
-              {VIP_EMOJIS.map((emoji) => (
+              {VIP_IMAGE_EMOJIS.filter(e => e.cost === 0).map((emoji) => (
                 <button
-                  key={emoji}
+                  key={emoji.id}
                   onClick={() => {
-                    onEmojiSelect(emoji);
+                    onEmojiSelect(`[img:${emoji.id}]`);
                     setOpen(false);
                   }}
-                  className="h-9 w-9 flex items-center justify-center text-lg rounded-lg hover:bg-amber-500/10 transition-colors"
+                  className="h-10 w-10 flex items-center justify-center rounded-lg hover:bg-amber-500/10 transition-colors"
+                  title={emoji.name}
                 >
-                  {emoji}
+                  <img src={emoji.url} alt={emoji.name} className="h-7 w-7" />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Custom VIP emoji images */}
+          {/* Premium emojis */}
           <div>
-            <p className="text-xs text-muted-foreground mb-2">Unikátní VIP obrázky</p>
-            <div className="grid grid-cols-5 gap-1.5">
-              {VIP_CUSTOM_EMOJIS.map((emoji) => {
-                const unlocked = emoji.cost === 0 || unlockedEmojis.includes(emoji.id);
+            <p className="text-xs text-muted-foreground mb-2">Premium (odemkni v obchodě)</p>
+            <div className="grid grid-cols-6 gap-1.5">
+              {VIP_IMAGE_EMOJIS.filter(e => e.cost > 0).map((emoji) => {
+                const unlocked = isUnlocked(emoji);
                 return (
                   <button
                     key={emoji.id}
                     onClick={() => {
                       if (unlocked) {
-                        onEmojiSelect(`[${emoji.id}]`);
+                        onEmojiSelect(`[img:${emoji.id}]`);
                         setOpen(false);
                       }
                     }}
                     disabled={!unlocked}
                     className={cn(
-                      "relative h-10 w-10 flex items-center justify-center rounded-lg transition-colors border border-transparent",
-                      unlocked ? "hover:bg-amber-500/10 hover:border-amber-500/30" : "opacity-50 cursor-not-allowed"
+                      "relative h-10 w-10 flex items-center justify-center rounded-lg transition-colors",
+                      unlocked ? "hover:bg-amber-500/10" : "opacity-50 cursor-not-allowed"
                     )}
                     title={`${emoji.name} (${emoji.cost} bodů)`}
                   >
-                    <div className="w-6 h-6 rounded bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                      {emoji.name.charAt(4)}
-                    </div>
+                    <img src={emoji.url} alt={emoji.name} className="h-7 w-7" />
                     {!unlocked && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
-                        <Lock className="h-2.5 w-2.5 text-white" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-lg">
+                        <Lock className="h-3 w-3 text-white" />
                       </div>
                     )}
                   </button>
@@ -296,6 +313,43 @@ export function VIPEmojiPicker({
       </PopoverContent>
     </Popover>
   );
+}
+
+// Render VIP image emojis in text
+export function renderVIPEmojis(text: string): React.ReactNode[] {
+  const regex = /\[img:([a-z-]+)\]/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    
+    const emojiId = match[1];
+    const emoji = VIP_IMAGE_EMOJIS.find(e => e.id === emojiId);
+    if (emoji) {
+      parts.push(
+        <img 
+          key={match.index} 
+          src={emoji.url} 
+          alt={emoji.name} 
+          className="inline-block h-5 w-5 align-text-bottom mx-0.5"
+        />
+      );
+    } else {
+      parts.push(match[0]);
+    }
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  
+  return parts.length > 0 ? parts : [text];
 }
 
 // VIP badge component
