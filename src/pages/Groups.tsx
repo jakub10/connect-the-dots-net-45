@@ -13,10 +13,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Users, MessageCircle, Send, Lock, Globe, LogOut } from 'lucide-react';
+import { Loader2, Plus, Users, MessageCircle, Send, Lock, Globe, LogOut, Settings, UserPlus, UserMinus, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface Profile {
+  user_id: string;
   username: string;
   full_name: string;
   avatar_url: string | null;
@@ -34,12 +35,24 @@ interface Group {
   is_member?: boolean;
 }
 
+interface GroupMember {
+  id: string;
+  user_id: string;
+  role: string;
+  profile?: Profile;
+}
+
 interface GroupMessage {
   id: string;
   group_id: string;
   sender_id: string;
   content: string;
   created_at: string;
+  profile?: Profile;
+}
+
+interface PendingRequest {
+  user_id: string;
   profile?: Profile;
 }
 
@@ -54,10 +67,15 @@ const Groups = () => {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showManageDialog, setShowManageDialog] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupDescription, setNewGroupDescription] = useState('');
   const [newGroupPrivate, setNewGroupPrivate] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [searchUsers, setSearchUsers] = useState('');
+  const [searchResults, setSearchResults] = useState<Profile[]>([]);
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -70,7 +88,6 @@ const Groups = () => {
     if (selectedGroup && user) {
       fetchMessages(selectedGroup.id);
       
-      // Subscribe to new messages
       const channel = supabase
         .channel(`group-${selectedGroup.id}`)
         .on(
@@ -83,10 +100,9 @@ const Groups = () => {
           },
           async (payload) => {
             const newMsg = payload.new as GroupMessage;
-            // Fetch profile for new message
             const { data: profile } = await supabase
               .from('profiles')
-              .select('username, full_name, avatar_url')
+              .select('user_id, username, full_name, avatar_url')
               .eq('user_id', newMsg.sender_id)
               .maybeSingle();
             
@@ -105,7 +121,7 @@ const Groups = () => {
     if (!user) return;
     const { data } = await supabase
       .from('profiles')
-      .select('username, full_name, avatar_url')
+      .select('user_id, username, full_name, avatar_url')
       .eq('user_id', user.id)
       .maybeSingle();
     setCurrentProfile(data);
@@ -125,7 +141,6 @@ const Groups = () => {
       return;
     }
 
-    // Check membership for each group
     const { data: memberships } = await supabase
       .from('group_members')
       .select('group_id')
@@ -133,7 +148,6 @@ const Groups = () => {
 
     const membershipSet = new Set(memberships?.map(m => m.group_id) || []);
 
-    // Get member counts
     const groupsWithData = await Promise.all(
       (groupsData || []).map(async (group) => {
         const { count } = await supabase
@@ -161,7 +175,6 @@ const Groups = () => {
       .order('created_at', { ascending: true });
 
     if (data) {
-      // Fetch profiles for messages
       const senderIds = [...new Set(data.map(m => m.sender_id))];
       const { data: profiles } = await supabase
         .from('profiles')
@@ -176,6 +189,81 @@ const Groups = () => {
           profile: profileMap.get(msg.sender_id) || undefined,
         }))
       );
+    }
+  };
+
+  const fetchGroupMembers = async (groupId: string) => {
+    const { data } = await supabase
+      .from('group_members')
+      .select('id, user_id, role')
+      .eq('group_id', groupId);
+
+    if (data) {
+      const userIds = data.map(m => m.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, username, full_name, avatar_url')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      setGroupMembers(
+        data.map(member => ({
+          ...member,
+          profile: profileMap.get(member.user_id) || undefined,
+        }))
+      );
+    }
+  };
+
+  const searchForUsers = async (query: string) => {
+    if (!query.trim() || !selectedGroup) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearching(true);
+    const { data } = await supabase
+      .from('profiles')
+      .select('user_id, username, full_name, avatar_url')
+      .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+      .limit(10);
+
+    // Filter out existing members
+    const memberIds = new Set(groupMembers.map(m => m.user_id));
+    setSearchResults((data || []).filter(p => !memberIds.has(p.user_id)));
+    setSearching(false);
+  };
+
+  const addMember = async (userId: string) => {
+    if (!selectedGroup) return;
+
+    const { error } = await supabase
+      .from('group_members')
+      .insert({ group_id: selectedGroup.id, user_id: userId, role: 'member' });
+
+    if (!error) {
+      toast({ title: 'Člen přidán', description: 'Uživatel byl přidán do skupiny.' });
+      fetchGroupMembers(selectedGroup.id);
+      setSearchResults([]);
+      setSearchUsers('');
+      fetchGroups();
+    }
+  };
+
+  const removeMember = async (userId: string) => {
+    if (!selectedGroup) return;
+
+    const { error } = await supabase
+      .from('group_members')
+      .delete()
+      .eq('group_id', selectedGroup.id)
+      .eq('user_id', userId);
+
+    if (!error) {
+      toast({ title: 'Člen odebrán', description: 'Uživatel byl odebrán ze skupiny.' });
+      fetchGroupMembers(selectedGroup.id);
+      fetchGroups();
     }
   };
 
@@ -195,21 +283,13 @@ const Groups = () => {
       .single();
 
     if (error) {
-      toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se vytvořit skupinu.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Chyba', description: 'Nepodařilo se vytvořit skupinu.', variant: 'destructive' });
     } else {
-      // Add owner as member
       await supabase
         .from('group_members')
         .insert({ group_id: group.id, user_id: user.id, role: 'owner' });
 
-      toast({
-        title: 'Skupina vytvořena!',
-        description: `Skupina "${group.name}" byla úspěšně vytvořena.`,
-      });
+      toast({ title: 'Skupina vytvořena!', description: `Skupina "${group.name}" byla úspěšně vytvořena.` });
       setShowCreateDialog(false);
       setNewGroupName('');
       setNewGroupDescription('');
@@ -222,21 +302,19 @@ const Groups = () => {
   const joinGroup = async (group: Group) => {
     if (!user) return;
 
+    if (group.is_private) {
+      toast({ title: 'Soukromá skupina', description: 'Tato skupina je soukromá. Zakladatel vás musí pozvat.', variant: 'destructive' });
+      return;
+    }
+
     const { error } = await supabase
       .from('group_members')
       .insert({ group_id: group.id, user_id: user.id });
 
     if (error) {
-      toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se připojit ke skupině.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Chyba', description: 'Nepodařilo se připojit ke skupině.', variant: 'destructive' });
     } else {
-      toast({
-        title: 'Připojeno!',
-        description: `Nyní jste členem skupiny "${group.name}".`,
-      });
+      toast({ title: 'Připojeno!', description: `Nyní jste členem skupiny "${group.name}".` });
       fetchGroups();
     }
   };
@@ -251,10 +329,7 @@ const Groups = () => {
       .eq('user_id', user.id);
 
     if (!error) {
-      toast({
-        title: 'Opuštěno',
-        description: `Opustili jste skupinu "${group.name}".`,
-      });
+      toast({ title: 'Opuštěno', description: `Opustili jste skupinu "${group.name}".` });
       if (selectedGroup?.id === group.id) {
         setSelectedGroup(null);
         setMessages([]);
@@ -276,15 +351,17 @@ const Groups = () => {
       });
 
     if (error) {
-      toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se odeslat zprávu.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Chyba', description: 'Nepodařilo se odeslat zprávu.', variant: 'destructive' });
     } else {
       setNewMessage('');
     }
     setSendingMessage(false);
+  };
+
+  const openManageDialog = (group: Group) => {
+    setSelectedGroup(group);
+    fetchGroupMembers(group.id);
+    setShowManageDialog(true);
   };
 
   if (loading) {
@@ -351,7 +428,7 @@ const Groups = () => {
                     />
                     <label htmlFor="private" className="text-sm flex items-center gap-1">
                       <Lock className="h-4 w-4" />
-                      Soukromá skupina
+                      Soukromá skupina (pouze pozvaní členové)
                     </label>
                   </div>
                   <Button 
@@ -359,11 +436,7 @@ const Groups = () => {
                     disabled={!newGroupName.trim() || creating}
                     className="w-full"
                   >
-                    {creating ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
+                    {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
                     Vytvořit
                   </Button>
                 </div>
@@ -406,36 +479,56 @@ const Groups = () => {
                               ) : (
                                 <Globe className="h-3 w-3 text-muted-foreground" />
                               )}
+                              {group.owner_id === user?.id && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Crown className="h-3 w-3 mr-1" />
+                                  Zakladatel
+                                </Badge>
+                              )}
                             </CardTitle>
                             <CardDescription className="text-xs">
                               {group.member_count} členů
                             </CardDescription>
                           </div>
                         </div>
-                        {group.is_member ? (
-                          group.owner_id !== user?.id && (
+                        <div className="flex gap-1">
+                          {group.owner_id === user?.id && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                leaveGroup(group);
+                                openManageDialog(group);
                               }}
                             >
-                              <LogOut className="h-4 w-4" />
+                              <Settings className="h-4 w-4" />
                             </Button>
-                          )
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              joinGroup(group);
-                            }}
-                          >
-                            Připojit se
-                          </Button>
-                        )}
+                          )}
+                          {group.is_member ? (
+                            group.owner_id !== user?.id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  leaveGroup(group);
+                                }}
+                              >
+                                <LogOut className="h-4 w-4" />
+                              </Button>
+                            )
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                joinGroup(group);
+                              }}
+                            >
+                              Připojit se
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     {group.description && (
@@ -469,15 +562,11 @@ const Groups = () => {
                         {messages.map(msg => (
                           <div
                             key={msg.id}
-                            className={`flex gap-2 ${
-                              msg.sender_id === user?.id ? 'flex-row-reverse' : ''
-                            }`}
+                            className={`flex gap-2 ${msg.sender_id === user?.id ? 'flex-row-reverse' : ''}`}
                           >
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={msg.profile?.avatar_url || ''} />
-                              <AvatarFallback>
-                                {msg.profile?.full_name?.[0] || '?'}
-                              </AvatarFallback>
+                              <AvatarFallback>{msg.profile?.full_name?.[0] || '?'}</AvatarFallback>
                             </Avatar>
                             <div
                               className={`max-w-[70%] rounded-2xl px-4 py-2 ${
@@ -511,11 +600,7 @@ const Groups = () => {
                         disabled={!newMessage.trim() || sendingMessage}
                         size="icon"
                       >
-                        {sendingMessage ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
+                        {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       </Button>
                     </div>
                   </div>
@@ -532,6 +617,97 @@ const Groups = () => {
           </div>
         </div>
       </main>
+
+      {/* Manage Members Dialog */}
+      <Dialog open={showManageDialog} onOpenChange={setShowManageDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Správa skupiny
+            </DialogTitle>
+            <DialogDescription>
+              Přidávejte a odebírejte členy skupiny {selectedGroup?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Add member search */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Přidat člena</label>
+              <Input
+                value={searchUsers}
+                onChange={(e) => {
+                  setSearchUsers(e.target.value);
+                  searchForUsers(e.target.value);
+                }}
+                placeholder="Hledat uživatele..."
+              />
+              {searching && <Loader2 className="h-4 w-4 animate-spin mt-2" />}
+              {searchResults.length > 0 && (
+                <div className="mt-2 border rounded-lg divide-y">
+                  {searchResults.map(profile => (
+                    <div key={profile.user_id} className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={profile.avatar_url || ''} />
+                          <AvatarFallback>{profile.full_name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{profile.full_name}</p>
+                          <p className="text-xs text-muted-foreground">@{profile.username}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" onClick={() => addMember(profile.user_id)}>
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Current members */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Členové ({groupMembers.length})</label>
+              <div className="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                {groupMembers.map(member => (
+                  <div key={member.id} className="flex items-center justify-between p-2">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={member.profile?.avatar_url || ''} />
+                        <AvatarFallback>{member.profile?.full_name?.[0] || '?'}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium flex items-center gap-2">
+                          {member.profile?.full_name || 'Neznámý'}
+                          {member.role === 'owner' && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Crown className="h-3 w-3 mr-1" />
+                              Zakladatel
+                            </Badge>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">@{member.profile?.username}</p>
+                      </div>
+                    </div>
+                    {member.role !== 'owner' && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => removeMember(member.user_id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <RightSidebar />
       <MobileNav />
