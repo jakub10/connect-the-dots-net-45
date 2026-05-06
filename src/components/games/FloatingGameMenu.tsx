@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bot, Gamepad2, Brain, MousePointer2, Crown } from 'lucide-react';
+import { Bot, Gamepad2, Brain, MousePointer2, Crown, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AIChatWindow } from './AIChatWindow';
 import { SnakeGame } from './SnakeGame';
@@ -8,9 +8,10 @@ import { MemoryGame } from './MemoryGame';
 import { ClickerGame } from './ClickerGame';
 import { VIPPuzzleGame } from './VIPPuzzleGame';
 import { AIChatbotModal } from './AIChatbotModal';
+import { VoiceAgentModal } from './VoiceAgentModal';
 import { useUserRole } from '@/hooks/useUserRole';
 
-type ActiveModal = 'none' | 'ai' | 'snake' | 'tower' | 'memory' | 'clicker' | 'vip-puzzle' | 'chatbot';
+type ActiveModal = 'none' | 'ai' | 'snake' | 'tower' | 'memory' | 'clicker' | 'vip-puzzle' | 'chatbot' | 'voice';
 
 export function FloatingGameMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +19,7 @@ export function FloatingGameMenu() {
   const { isVIP, isCreator } = useUserRole();
 
   const baseMenuItems = [
+    { id: 'voice' as const, icon: Mic, label: 'Hlasový asistent', color: 'from-pink-500 to-rose-600' },
     { id: 'chatbot' as const, icon: Bot, label: 'AI Chatbot', color: 'from-blue-500 to-cyan-600' },
     { id: 'ai' as const, icon: Bot, label: 'AI Asistent (Groq)', color: 'from-violet-500 to-purple-600' },
     { id: 'snake' as const, icon: Gamepad2, label: 'Snake', color: 'from-green-500 to-emerald-600' },
@@ -98,6 +100,7 @@ export function FloatingGameMenu() {
       <MemoryGame isOpen={activeModal === 'memory'} onClose={() => setActiveModal('none')} />
       <ClickerGame isOpen={activeModal === 'clicker'} onClose={() => setActiveModal('none')} />
       <VIPPuzzleGame isOpen={activeModal === 'vip-puzzle'} onClose={() => setActiveModal('none')} />
+      <VoiceAgentModal isOpen={activeModal === 'voice'} onClose={() => setActiveModal('none')} />
     </>
   );
 }
