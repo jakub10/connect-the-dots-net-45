@@ -19,13 +19,13 @@ export function FloatingGameMenu() {
   const { isVIP, isCreator } = useUserRole();
 
   const baseMenuItems = [
-    { id: 'voice' as const, icon: Mic, label: 'Hlasový asistent', color: 'from-pink-500 to-rose-600' },
-    { id: 'chatbot' as const, icon: Bot, label: 'AI Chatbot', color: 'from-blue-500 to-cyan-600' },
-    { id: 'ai' as const, icon: Bot, label: 'AI Asistent (Groq)', color: 'from-violet-500 to-purple-600' },
-    { id: 'snake' as const, icon: Gamepad2, label: 'Snake', color: 'from-green-500 to-emerald-600' },
-    { id: 'tower' as const, icon: Gamepad2, label: 'Tower Defense', color: 'from-orange-500 to-red-600' },
-    { id: 'memory' as const, icon: Brain, label: 'Paměť', color: 'from-blue-500 to-cyan-600' },
     { id: 'clicker' as const, icon: MousePointer2, label: 'Clicker', color: 'from-yellow-500 to-orange-600' },
+    { id: 'memory' as const, icon: Brain, label: 'Paměť', color: 'from-blue-500 to-cyan-600' },
+    { id: 'tower' as const, icon: Gamepad2, label: 'Tower Defense', color: 'from-orange-500 to-red-600' },
+    { id: 'snake' as const, icon: Gamepad2, label: 'Snake', color: 'from-green-500 to-emerald-600' },
+    { id: 'ai' as const, icon: Bot, label: 'AI Asistent (Groq)', color: 'from-violet-500 to-purple-600' },
+    { id: 'chatbot' as const, icon: Bot, label: 'AI Chatbot', color: 'from-blue-500 to-cyan-600' },
+    { id: 'voice' as const, icon: Mic, label: 'Hlasový asistent', color: 'from-pink-500 to-rose-600' },
   ];
 
   // VIP exclusive games
