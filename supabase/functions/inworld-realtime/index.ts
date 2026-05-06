@@ -1,6 +1,9 @@
 // Inworld Realtime Speech-to-Speech WebSocket proxy
 // Browser <-> this edge function (WS) <-> Inworld Realtime API (WS)
-// Keeps INWORLD_API_KEY safe on the server.
+// INWORLD_API_KEY stays safe on the server.
+// Uses npm:ws because Deno's native WebSocket constructor cannot set custom headers.
+
+import WS from "npm:ws@8.18.0";
 
 Deno.serve((req) => {
   const upgrade = req.headers.get("upgrade") || "";
@@ -18,7 +21,6 @@ Deno.serve((req) => {
   const sessionId = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const inworldUrl = `wss://api.inworld.ai/api/v1/realtime/session?key=${sessionId}&protocol=realtime`;
 
-  // Default session config (can be overridden via client message after connect)
   const SESSION_CFG = JSON.stringify({
     type: "session.update",
     session: {
@@ -36,30 +38,25 @@ Deno.serve((req) => {
     },
   });
 
-  let api: WebSocket | null = null;
+  let api: WS | null = null;
   let setup = 0;
   const pending: string[] = [];
 
   const connectInworld = () => {
-    // Deno's WebSocket constructor supports the headers option in edge runtime
-    // via the second arg in some runtimes; fallback to query auth not supported,
-    // so we rely on Deno.upgrade-style by passing headers using fetch+Sec-WebSocket.
-    // Supabase Edge (Deno deploy) supports `new WebSocket(url, { headers })` extension.
-    // @ts-ignore - Deno extension
-    api = new WebSocket(inworldUrl, {
+    api = new WS(inworldUrl, {
       headers: { Authorization: `Basic ${INWORLD_API_KEY}` },
     });
 
-    api.onopen = () => {
+    api.on("open", () => {
       console.log("Connected to Inworld");
-      while (pending.length && api && api.readyState === WebSocket.OPEN) {
+      while (pending.length && api && api.readyState === WS.OPEN) {
         api.send(pending.shift()!);
       }
-    };
+    });
 
-    api.onmessage = (ev) => {
-      const data = typeof ev.data === "string" ? ev.data : "";
-      if (setup < 2 && data) {
+    api.on("message", (raw: Uint8Array | string) => {
+      const data = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
+      if (setup < 2) {
         try {
           const t = JSON.parse(data).type;
           if (t === "session.created") {
@@ -75,13 +72,13 @@ Deno.serve((req) => {
       if (browser.readyState === WebSocket.OPEN) {
         browser.send(data);
       }
-    };
+    });
 
-    api.onerror = (e) => console.error("Inworld WS error:", e);
-    api.onclose = (e) => {
-      console.log("Inworld WS closed:", e.code, e.reason);
+    api.on("error", (e: Error) => console.error("Inworld WS error:", e?.message || e));
+    api.on("close", (code: number, reason: Buffer) => {
+      console.log("Inworld WS closed:", code, reason?.toString?.());
       if (browser.readyState === WebSocket.OPEN) browser.close();
-    };
+    });
   };
 
   browser.onopen = () => {
@@ -90,7 +87,7 @@ Deno.serve((req) => {
 
   browser.onmessage = (ev) => {
     const msg = typeof ev.data === "string" ? ev.data : "";
-    if (api && api.readyState === WebSocket.OPEN) {
+    if (api && api.readyState === WS.OPEN) {
       api.send(msg);
     } else {
       pending.push(msg);
@@ -98,7 +95,7 @@ Deno.serve((req) => {
   };
 
   browser.onclose = () => {
-    if (api && api.readyState === WebSocket.OPEN) api.close();
+    try { api?.close(); } catch (_) { /* ignore */ }
   };
   browser.onerror = (e) => console.error("Browser WS error:", e);
 
