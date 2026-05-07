@@ -1,9 +1,23 @@
 // Inworld Realtime Speech-to-Speech WebSocket proxy
 // Browser <-> this edge function (WS) <-> Inworld Realtime API (WS)
-// INWORLD_API_KEY stays safe on the server.
-// Uses npm:ws because Deno's native WebSocket constructor cannot set custom headers.
+// Uses npm:ws because Deno's native WebSocket cannot set custom headers.
 
 import WS from "npm:ws@8.18.0";
+
+const VOICE_BY_LANG: Record<string, string> = {
+  cs: "Hana",
+  sk: "Hana",
+  en: "Ashley",
+};
+
+const SYSTEM_PROMPTS: Record<string, string> = {
+  cs:
+    "Jsi přátelský AI hlasový asistent pro dětskou sociální síť Kamosféra. Odpovídej VŽDY česky, krátce, mile a bezpečně pro děti. Pamatuj si průběh konverzace a navazuj na předchozí repliky uživatele.",
+  sk:
+    "Si priateľský AI hlasový asistent pre detskú sociálnu sieť Kamosféra. Odpovedaj VŽDY po slovensky, krátko, milo a bezpečne pre deti. Pamätaj si priebeh konverzácie a nadväzuj na predošlé repliky.",
+  en:
+    "You are a friendly AI voice assistant for the kids social network Kamosféra. Always reply in English, briefly, kindly and safely for children. Remember the conversation history and follow up on previous user turns.",
+};
 
 Deno.serve((req) => {
   const upgrade = req.headers.get("upgrade") || "";
@@ -16,6 +30,11 @@ Deno.serve((req) => {
     return new Response("INWORLD_API_KEY not configured", { status: 500 });
   }
 
+  const url = new URL(req.url);
+  const lang = (url.searchParams.get("lang") || "cs").toLowerCase();
+  const voice = url.searchParams.get("voice") || VOICE_BY_LANG[lang] || "Hana";
+  const instructions = SYSTEM_PROMPTS[lang] || SYSTEM_PROMPTS.cs;
+
   const { socket: browser, response } = Deno.upgradeWebSocket(req);
 
   const sessionId = `voice-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -24,17 +43,32 @@ Deno.serve((req) => {
   const SESSION_CFG = JSON.stringify({
     type: "session.update",
     session: {
-      instructions:
-        "Jsi přátelský AI hlasový asistent pro dětskou sociální síť Kamosféra. Odpovídej česky, krátce, mile a bezpečně pro děti. Používej přirozený konverzační tón.",
+      instructions,
+      voice,
+      modalities: ["text", "audio"],
+      input_audio_format: "pcm16",
+      output_audio_format: "pcm16",
+      input_audio_transcription: { model: "whisper-1", language: lang },
+      turn_detection: {
+        type: "server_vad",
+        threshold: 0.5,
+        prefix_padding_ms: 300,
+        silence_duration_ms: 600,
+        create_response: true,
+      },
     },
   });
 
   const GREET = JSON.stringify({
-    type: "conversation.item.create",
-    item: {
-      type: "message",
-      role: "user",
-      content: [{ type: "input_text", text: "Pozdrav uživatele krátce česky." }],
+    type: "response.create",
+    response: {
+      modalities: ["audio", "text"],
+      instructions:
+        lang === "en"
+          ? "Greet the user briefly in English."
+          : lang === "sk"
+          ? "Stručne pozdrav používateľa po slovensky."
+          : "Krátce pozdrav uživatele česky.",
     },
   });
 
@@ -48,7 +82,7 @@ Deno.serve((req) => {
     });
 
     api.on("open", () => {
-      console.log("Connected to Inworld");
+      console.log("Connected to Inworld", { lang, voice });
       while (pending.length && api && api.readyState === WS.OPEN) {
         api.send(pending.shift()!);
       }
@@ -64,7 +98,6 @@ Deno.serve((req) => {
             setup = 1;
           } else if (t === "session.updated" && setup === 1) {
             api!.send(GREET);
-            api!.send('{"type":"response.create"}');
             setup = 2;
           }
         } catch (_) { /* ignore */ }
