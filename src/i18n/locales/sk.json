@@ -1,0 +1,50 @@
+{
+  "nav": {
+    "home": "Domov",
+    "search": "Hľadať",
+    "notifications": "Oznámenia",
+    "messages": "Správy",
+    "groups": "Skupiny",
+    "saved": "Uložené",
+    "profile": "Profil",
+    "settings": "Nastavenia",
+    "logout": "Odhlásiť sa"
+  },
+  "common": {
+    "language": "Jazyk",
+    "send": "Odoslať",
+    "cancel": "Zrušiť",
+    "save": "Uložiť",
+    "close": "Zavrieť",
+    "loading": "Načítavam…",
+    "voice": "Hlas"
+  },
+  "fab": {
+    "clicker": "Klikacia hra",
+    "memory": "Pamäť",
+    "tower": "Tower Defense",
+    "snake": "Snake",
+    "ai": "AI Asistent",
+    "chatbot": "AI Chatbot",
+    "voice": "Hlasový asistent",
+    "vipPuzzle": "VIP 2048"
+  },
+  "voice": {
+    "title": "Hlasový asistent",
+    "subtitle": "Realtime hlasový chat",
+    "start": "Začať konverzáciu",
+    "stop": "Ukončiť",
+    "idle": "Klikni a začni hovoriť",
+    "connecting": "Pripájam…",
+    "listening": "🎤 Počúvam…",
+    "speaking": "🔊 Hovorím…",
+    "error": "Chyba",
+    "languageLabel": "Jazyk konverzácie",
+    "voiceLabel": "Hlas (výslovnosť)"
+  },
+  "languages": {
+    "cs": "Čeština",
+    "sk": "Slovenčina",
+    "en": "Angličtina"
+  }
+}

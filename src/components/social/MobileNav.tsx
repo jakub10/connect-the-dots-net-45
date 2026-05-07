@@ -1,17 +1,19 @@
-import { Home, Search, Bell, MessageCircle, User, Users } from 'lucide-react';
+import { Home, Search, MessageCircle, User, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-
-const navItems = [
-  { icon: Home, label: 'Domů', path: '/' },
-  { icon: Search, label: 'Hledat', path: '/search' },
-  { icon: Users, label: 'Skupiny', path: '/groups' },
-  { icon: MessageCircle, label: 'Zprávy', path: '/messages' },
-  { icon: User, label: 'Profil', path: '/profile' },
-];
 
 export function MobileNav() {
   const location = useLocation();
+  const { t } = useTranslation();
+
+  const navItems = [
+    { icon: Home, label: t('nav.home'), path: '/' },
+    { icon: Search, label: t('nav.search'), path: '/search' },
+    { icon: Users, label: t('nav.groups'), path: '/groups' },
+    { icon: MessageCircle, label: t('nav.messages'), path: '/messages' },
+    { icon: User, label: t('nav.profile'), path: '/profile' },
+  ];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-t border-border md:hidden safe-area-bottom">

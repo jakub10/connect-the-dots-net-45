@@ -1,0 +1,50 @@
+{
+  "nav": {
+    "home": "Home",
+    "search": "Search",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "groups": "Groups",
+    "saved": "Saved",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Sign out"
+  },
+  "common": {
+    "language": "Language",
+    "send": "Send",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "loading": "Loading…",
+    "voice": "Voice"
+  },
+  "fab": {
+    "clicker": "Clicker",
+    "memory": "Memory",
+    "tower": "Tower Defense",
+    "snake": "Snake",
+    "ai": "AI Assistant",
+    "chatbot": "AI Chatbot",
+    "voice": "Voice Assistant",
+    "vipPuzzle": "VIP 2048"
+  },
+  "voice": {
+    "title": "Voice Assistant",
+    "subtitle": "Realtime voice chat",
+    "start": "Start conversation",
+    "stop": "End",
+    "idle": "Tap and start speaking",
+    "connecting": "Connecting…",
+    "listening": "🎤 Listening…",
+    "speaking": "🔊 Speaking…",
+    "error": "Error",
+    "languageLabel": "Conversation language",
+    "voiceLabel": "Voice (pronunciation)"
+  },
+  "languages": {
+    "cs": "Czech",
+    "sk": "Slovak",
+    "en": "English"
+  }
+}

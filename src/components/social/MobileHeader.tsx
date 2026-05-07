@@ -1,5 +1,6 @@
 import { Menu, LogOut, Settings, Bookmark } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import logo from '@/assets/logo.jpg';
 
 interface MobileHeaderProps {
@@ -22,6 +24,7 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ currentProfile }: MobileHeaderProps) {
   const { signOut } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border md:hidden safe-area-top">
@@ -31,7 +34,9 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
           <h1 className="text-lg font-bold gradient-text">Kamosféra</h1>
         </Link>
 
-        <DropdownMenu>
+        <div className="flex items-center gap-1">
+          <LanguageSwitcher />
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
               {currentProfile ? (
@@ -57,22 +62,23 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
             <DropdownMenuItem asChild>
               <Link to="/saved" className="flex items-center gap-2">
                 <Bookmark className="h-4 w-4" />
-                Uloženo
+                {t('nav.saved')}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                Nastavení
+                {t('nav.settings')}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut} className="text-destructive">
               <LogOut className="h-4 w-4 mr-2" />
-              Odhlásit se
+              {t('nav.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, X, Loader2, Volume2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface VoiceAgentModalProps {
@@ -8,11 +16,40 @@ interface VoiceAgentModalProps {
   onClose: () => void;
 }
 
-const WS_URL = `${import.meta.env.VITE_SUPABASE_URL.replace(/^http/, 'ws')}/functions/v1/inworld-realtime`;
+const BASE_WS = `${import.meta.env.VITE_SUPABASE_URL.replace(/^http/, 'ws')}/functions/v1/inworld-realtime`;
 
 type Status = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
+type VoiceLang = 'cs' | 'sk' | 'en';
+
+const VOICES: Record<VoiceLang, { id: string; label: string }[]> = {
+  cs: [
+    { id: 'Hana', label: 'Hana (žena)' },
+    { id: 'Adam', label: 'Adam (muž)' },
+  ],
+  sk: [
+    { id: 'Hana', label: 'Hana (žena)' },
+    { id: 'Adam', label: 'Adam (muž)' },
+  ],
+  en: [
+    { id: 'Ashley', label: 'Ashley (female)' },
+    { id: 'Edward', label: 'Edward (male)' },
+    { id: 'Alex', label: 'Alex (neutral)' },
+  ],
+};
+
+const LANG_LABELS: Record<VoiceLang, string> = {
+  cs: '🇨🇿 Čeština',
+  sk: '🇸🇰 Slovenčina',
+  en: '🇬🇧 English',
+};
 
 export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
+  const { t, i18n } = useTranslation();
+  const initial = (['cs', 'sk', 'en'].includes(i18n.resolvedLanguage || '')
+    ? (i18n.resolvedLanguage as VoiceLang)
+    : 'cs');
+  const [lang, setLang] = useState<VoiceLang>(initial);
+  const [voice, setVoice] = useState<string>(VOICES[initial][0].id);
   const [status, setStatus] = useState<Status>('idle');
   const [transcript, setTranscript] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -56,6 +93,11 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  // adjust default voice when language changes
+  useEffect(() => {
+    setVoice(VOICES[lang][0].id);
+  }, [lang]);
+
   const playNext = () => {
     const ctx = ctxRef.current;
     if (!ctx || !queueRef.current.length) {
@@ -79,10 +121,10 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     const src = ctx.createBufferSource();
     src.buffer = audioBuf;
     src.connect(ctx.destination);
-    const t = Math.max(ctx.currentTime, nextPlayTimeRef.current);
-    nextPlayTimeRef.current = t + audioBuf.duration;
+    const tStart = Math.max(ctx.currentTime, nextPlayTimeRef.current);
+    nextPlayTimeRef.current = tStart + audioBuf.duration;
     src.onended = playNext;
-    src.start(t);
+    src.start(tStart);
     currentSrcRef.current = src;
   };
 
@@ -105,7 +147,8 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
       });
       streamRef.current = stream;
 
-      const ws = new WebSocket(WS_URL);
+      const wsUrl = `${BASE_WS}?lang=${lang}&voice=${encodeURIComponent(voice)}`;
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -133,7 +176,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
       ws.onmessage = ({ data }) => {
         try {
           const e = JSON.parse(data);
-          if (e.type === 'response.output_audio.delta') {
+          if (e.type === 'response.output_audio.delta' || e.type === 'response.audio.delta') {
             setStatus('speaking');
             const buf = Uint8Array.from(atob(e.delta), (c) => c.charCodeAt(0)).buffer;
             queueRef.current.push(buf);
@@ -141,19 +184,25 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
           } else if (e.type === 'input_audio_buffer.speech_started') {
             stopAudio();
             setStatus('listening');
-          } else if (e.type === 'response.output_audio_transcript.delta') {
+          } else if (
+            e.type === 'response.output_audio_transcript.delta' ||
+            e.type === 'response.audio_transcript.delta'
+          ) {
             setTranscript((prev) => prev + (e.delta || ''));
-          } else if (e.type === 'response.output_audio_transcript.done') {
-            // transcript complete
+          } else if (
+            e.type === 'response.output_audio_transcript.done' ||
+            e.type === 'response.audio_transcript.done'
+          ) {
+            setTranscript((prev) => prev + '\n');
           } else if (e.type === 'error') {
-            setErrorMsg(e.error?.message || 'Chyba'); 
+            setErrorMsg(e.error?.message || 'Chyba');
             setStatus('error');
           }
         } catch {}
       };
 
       ws.onerror = () => {
-        setErrorMsg('Připojení selhalo');
+        setErrorMsg(t('voice.error'));
         setStatus('error');
       };
       ws.onclose = () => {
@@ -161,7 +210,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
       };
     } catch (err) {
       console.error(err);
-      setErrorMsg(err instanceof Error ? err.message : 'Chyba mikrofonu');
+      setErrorMsg(err instanceof Error ? err.message : t('voice.error'));
       setStatus('error');
       cleanup();
     }
@@ -175,6 +224,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
   if (!isOpen) return null;
 
   const isActive = status === 'listening' || status === 'speaking';
+  const settingsDisabled = status !== 'idle' && status !== 'error';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -185,8 +235,8 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
               <Volume2 className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h3 className="font-semibold">Hlasový asistent</h3>
-              <p className="text-xs text-muted-foreground">Inworld Realtime</p>
+              <h3 className="font-semibold">{t('voice.title')}</h3>
+              <p className="text-xs text-muted-foreground">{t('voice.subtitle')}</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -194,48 +244,74 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
           </Button>
         </div>
 
-        <div className="p-8 flex flex-col items-center gap-6">
-          <div
-            className={cn(
-              'relative w-32 h-32 rounded-full flex items-center justify-center transition-all',
-              status === 'listening' && 'bg-pink-500/20 animate-pulse',
-              status === 'speaking' && 'bg-rose-500/30 scale-110',
-              status === 'connecting' && 'bg-muted',
-              (status === 'idle' || status === 'error') && 'bg-muted'
-            )}
-          >
-            {status === 'connecting' ? (
-              <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
-            ) : isActive ? (
-              <Mic className="h-12 w-12 text-pink-500" />
-            ) : (
-              <MicOff className="h-12 w-12 text-muted-foreground" />
-            )}
+        <div className="p-6 flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t('voice.languageLabel')}</label>
+              <Select value={lang} onValueChange={(v) => setLang(v as VoiceLang)} disabled={settingsDisabled}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(['cs', 'sk', 'en'] as VoiceLang[]).map((l) => (
+                    <SelectItem key={l} value={l}>{LANG_LABELS[l]}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t('voice.voiceLabel')}</label>
+              <Select value={voice} onValueChange={setVoice} disabled={settingsDisabled}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {VOICES[lang].map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <p className="text-sm text-muted-foreground text-center min-h-[20px]">
-            {status === 'idle' && 'Klikni a začni mluvit'}
-            {status === 'connecting' && 'Připojuji…'}
-            {status === 'listening' && '🎤 Poslouchám…'}
-            {status === 'speaking' && '🔊 Mluvím…'}
-            {status === 'error' && `Chyba: ${errorMsg}`}
-          </p>
-
-          {transcript && (
-            <div className="w-full max-h-32 overflow-y-auto p-3 rounded-lg bg-muted/50 text-sm">
-              {transcript}
+          <div className="flex flex-col items-center gap-4 pt-2">
+            <div
+              className={cn(
+                'relative w-28 h-28 rounded-full flex items-center justify-center transition-all',
+                status === 'listening' && 'bg-pink-500/20 animate-pulse',
+                status === 'speaking' && 'bg-rose-500/30 scale-110',
+                (status === 'idle' || status === 'error' || status === 'connecting') && 'bg-muted'
+              )}
+            >
+              {status === 'connecting' ? (
+                <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+              ) : isActive ? (
+                <Mic className="h-10 w-10 text-pink-500" />
+              ) : (
+                <MicOff className="h-10 w-10 text-muted-foreground" />
+              )}
             </div>
-          )}
 
-          {!isActive && status !== 'connecting' ? (
-            <Button onClick={start} size="lg" className="rounded-full px-8">
-              <Mic className="mr-2 h-5 w-5" /> Začít konverzaci
-            </Button>
-          ) : (
-            <Button onClick={stop} size="lg" variant="destructive" className="rounded-full px-8">
-              <MicOff className="mr-2 h-5 w-5" /> Ukončit
-            </Button>
-          )}
+            <p className="text-sm text-muted-foreground text-center min-h-[20px]">
+              {status === 'idle' && t('voice.idle')}
+              {status === 'connecting' && t('voice.connecting')}
+              {status === 'listening' && t('voice.listening')}
+              {status === 'speaking' && t('voice.speaking')}
+              {status === 'error' && `${t('voice.error')}: ${errorMsg}`}
+            </p>
+
+            {transcript && (
+              <div className="w-full max-h-32 overflow-y-auto p-3 rounded-lg bg-muted/50 text-sm whitespace-pre-wrap">
+                {transcript}
+              </div>
+            )}
+
+            {!isActive && status !== 'connecting' ? (
+              <Button onClick={start} size="lg" className="rounded-full px-8">
+                <Mic className="mr-2 h-5 w-5" /> {t('voice.start')}
+              </Button>
+            ) : (
+              <Button onClick={stop} size="lg" variant="destructive" className="rounded-full px-8">
+                <MicOff className="mr-2 h-5 w-5" /> {t('voice.stop')}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
