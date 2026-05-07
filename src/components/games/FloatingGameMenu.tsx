@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Bot, Gamepad2, Brain, MousePointer2, Crown, Mic } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { AIChatWindow } from './AIChatWindow';
 import { SnakeGame } from './SnakeGame';

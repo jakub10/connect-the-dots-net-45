@@ -34,7 +34,9 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
           <h1 className="text-lg font-bold gradient-text">Kamosféra</h1>
         </Link>
 
-        <DropdownMenu>
+        <div className="flex items-center gap-1">
+          <LanguageSwitcher />
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
               {currentProfile ? (
@@ -60,22 +62,23 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
             <DropdownMenuItem asChild>
               <Link to="/saved" className="flex items-center gap-2">
                 <Bookmark className="h-4 w-4" />
-                Uloženo
+                {t('nav.saved')}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/settings" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
-                Nastavení
+                {t('nav.settings')}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut} className="text-destructive">
               <LogOut className="h-4 w-4 mr-2" />
-              Odhlásit se
+              {t('nav.logout')}
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );
