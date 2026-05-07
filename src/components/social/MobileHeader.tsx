@@ -1,5 +1,6 @@
 import { Menu, LogOut, Settings, Bookmark } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import logo from '@/assets/logo.jpg';
 
 interface MobileHeaderProps {
@@ -22,6 +24,7 @@ interface MobileHeaderProps {
 
 export function MobileHeader({ currentProfile }: MobileHeaderProps) {
   const { signOut } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border md:hidden safe-area-top">
