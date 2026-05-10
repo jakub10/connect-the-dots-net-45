@@ -126,7 +126,7 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
           user_id: user.id,
           content: content.trim(),
           image_url: imageUrl,
-          background_style: isVIP ? backgroundStyle : null,
+          background_style: backgroundStyle,
         });
 
       if (error) throw error;
@@ -151,7 +151,7 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
   };
 
   // Preview background style
-  const previewBgClass = isVIP && backgroundStyle ? getBackgroundClass(backgroundStyle) : 'bg-card';
+  const previewBgClass = backgroundStyle ? getBackgroundClass(backgroundStyle) : 'bg-card';
 
   return (
     <div className={cn("rounded-xl border border-border p-4 mb-4 animate-fadeIn", previewBgClass)}>
@@ -227,18 +227,14 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
                 <MapPin className="h-5 w-5" />
               </Button>
               
-              {/* VIP Features */}
-              {isVIP && (
-                <>
-                  <VIPBackgroundPicker 
-                    selectedBackground={backgroundStyle} 
-                    onSelect={setBackgroundStyle} 
-                  />
-                  <VIPEmojiPicker 
-                    onEmojiSelect={(emoji) => setContent(prev => prev + emoji)} 
-                  />
-                </>
-              )}
+              {/* Pozadí + speciální emoji - dostupné všem */}
+              <VIPBackgroundPicker 
+                selectedBackground={backgroundStyle} 
+                onSelect={setBackgroundStyle} 
+              />
+              <VIPEmojiPicker 
+                onEmojiSelect={(emoji) => setContent(prev => prev + emoji)} 
+              />
             </div>
             <Button
               onClick={handleSubmit}
