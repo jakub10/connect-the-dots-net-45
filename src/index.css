@@ -253,6 +253,55 @@
     animation: heartBeat 0.6s ease-in-out;
   }
 
+  /* Animated text effects (available to everyone) */
+  @keyframes textRainbow {
+    0%, 100% { filter: hue-rotate(0deg); }
+    50% { filter: hue-rotate(180deg); }
+  }
+  @keyframes textGradientFlow {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes textSparkle {
+    0%, 100% { text-shadow: 0 0 4px hsl(var(--primary) / 0.3); }
+    50% { text-shadow: 0 0 16px hsl(var(--primary) / 0.8), 0 0 32px hsl(330 80% 60% / 0.5); }
+  }
+  @keyframes textBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .text-rainbow {
+    background: linear-gradient(90deg, #ff0080, #ff8c00, #ffd700, #00d26a, #0099ff, #8b5cf6, #ff0080);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textGradientFlow 4s linear infinite;
+  }
+
+  .text-gradient-flow {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(330 80% 60%), hsl(var(--primary)));
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textGradientFlow 3s ease infinite;
+  }
+
+  .text-sparkle {
+    animation: textSparkle 2s ease-in-out infinite;
+  }
+
+  .text-bounce {
+    display: inline-block;
+    animation: textBounce 1.2s ease-in-out infinite;
+  }
+
+  .text-hue-shift {
+    animation: textRainbow 3s ease-in-out infinite;
+  }
+
   /* VIP Animated Backgrounds */
   @keyframes vipGradientFlow {
     0% { background-position: 0% 50%; }
