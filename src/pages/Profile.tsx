@@ -347,7 +347,7 @@ const Profile = () => {
 
           {/* Tabs for content */}
           <Tabs defaultValue="achievements" className="w-full">
-            <TabsList className={isVIP ? "grid w-full grid-cols-4" : "grid w-full grid-cols-3"}>
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="achievements" className="gap-2">
                 <Trophy className="h-4 w-4" />
                 <span className="hidden sm:inline">Achievementy</span>
@@ -356,12 +356,10 @@ const Profile = () => {
                 <Crown className="h-4 w-4" />
                 VIP
               </TabsTrigger>
-              {isVIP && (
-                <TabsTrigger value="shop" className="gap-2">
-                  <ShoppingCart className="h-4 w-4" />
-                  <span className="hidden sm:inline">Obchod</span>
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="shop" className="gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                <span className="hidden sm:inline">Obchod</span>
+              </TabsTrigger>
               <TabsTrigger value="posts">Příspěvky</TabsTrigger>
             </TabsList>
             
@@ -373,11 +371,9 @@ const Profile = () => {
               <VIPActivation />
             </TabsContent>
 
-            {isVIP && (
-              <TabsContent value="shop" className="mt-4">
-                <VIPShop />
-              </TabsContent>
-            )}
+            <TabsContent value="shop" className="mt-4">
+              <VIPShop />
+            </TabsContent>
             
             <TabsContent value="posts" className="mt-4">
               <Card>
