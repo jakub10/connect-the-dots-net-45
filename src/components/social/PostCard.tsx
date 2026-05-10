@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Trash2, Crown } from 'lucide-react';
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Send, Trash2, Crown, Languages } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { formatDistanceToNow } from 'date-fns';
-import { cs } from 'date-fns/locale';
+import { cs, enUS, sk } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   Dialog,
@@ -34,7 +35,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { getBackgroundClass, PostBackgroundStyle, VIPBadge } from './VIPPostFeatures';
+import { getBackgroundClass, PostBackgroundStyle, VIPBadge, renderVIPEmojis } from './VIPPostFeatures';
 import { cn } from '@/lib/utils';
 
 interface PostCardProps {
@@ -83,13 +84,17 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
   const [commentsCount, setCommentsCount] = useState(post.comments_count || 0);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [translatedContent, setTranslatedContent] = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { isCreator } = useUserRole();
+  const { t, i18n } = useTranslation();
 
   const isOwnPost = user?.id === post.user_id;
   const canDelete = isOwnPost || isCreator;
   const bgClass = getBackgroundClass(post.background_style || null);
+  const dateLocale = i18n.language === 'en' ? enUS : i18n.language === 'sk' ? sk : cs;
 
   const handleLike = async () => {
     if (!user) {
@@ -295,8 +300,32 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
 
   const timeAgo = formatDistanceToNow(new Date(post.created_at), {
     addSuffix: true,
-    locale: cs,
+    locale: dateLocale,
   });
+
+  const handleTranslate = async () => {
+    if (translatedContent !== null) {
+      setTranslatedContent(null);
+      return;
+    }
+    if (!post.content.trim()) return;
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-content', {
+        body: { text: post.content, targetLang: i18n.language },
+      });
+      if (error) throw error;
+      setTranslatedContent(data?.translated || post.content);
+    } catch (e) {
+      toast({
+        title: t('voice.error'),
+        description: 'Translation failed',
+        variant: 'destructive',
+      });
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   // Check if post is saved on mount
   useEffect(() => {
@@ -370,7 +399,19 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
         </div>
 
         {/* Content */}
-        <p className="text-foreground mb-3 whitespace-pre-wrap">{post.content}</p>
+        <p className="text-foreground mb-2 whitespace-pre-wrap break-words">
+          {renderVIPEmojis(translatedContent ?? post.content)}
+        </p>
+        {post.content.trim() && (
+          <button
+            onClick={handleTranslate}
+            disabled={translating}
+            className="text-xs text-primary hover:underline mb-3 inline-flex items-center gap-1 disabled:opacity-50"
+          >
+            <Languages className="h-3 w-3" />
+            {translating ? t('common.translating') : translatedContent ? t('common.showOriginal') : t('common.translate')}
+          </button>
+        )}
 
         {/* Image */}
         {post.image_url && (
