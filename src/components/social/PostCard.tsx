@@ -379,11 +379,11 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={handleShare}>
                 <Share2 className="h-4 w-4 mr-2" />
-                Kopírovat odkaz
+                {t('post.copyLink')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSave}>
                 <Bookmark className="h-4 w-4 mr-2" />
-                {isSaved ? 'Odebrat z uložených' : 'Uložit příspěvek'}
+                {isSaved ? t('post.removeFromSaved') : t('post.savePost')}
               </DropdownMenuItem>
               {canDelete && (
                 <DropdownMenuItem 
@@ -391,7 +391,7 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  {isCreator && !isOwnPost ? 'Smazat (Tvůrce)' : 'Smazat příspěvek'}
+                  {t('post.deletePost')}
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
@@ -462,18 +462,18 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
       <Dialog open={showComments} onOpenChange={setShowComments}>
         <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Komentáře</DialogTitle>
+            <DialogTitle>{t('post.comments')}</DialogTitle>
             <DialogDescription>
-              {commentsCount} komentářů k tomuto příspěvku
+              {commentsCount}
             </DialogDescription>
           </DialogHeader>
           
           <ScrollArea className="flex-1 -mx-6 px-6">
             <div className="space-y-4 py-4">
               {loadingComments ? (
-                <p className="text-center text-muted-foreground">Načítání...</p>
+                <p className="text-center text-muted-foreground">{t('common.loading')}</p>
               ) : comments.length === 0 ? (
-                <p className="text-center text-muted-foreground">Zatím žádné komentáře</p>
+                <p className="text-center text-muted-foreground">{t('post.noComments')}</p>
               ) : (
                 comments.map(comment => (
                   <div key={comment.id} className="flex gap-3">
@@ -486,12 +486,12 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
                     <div className="flex-1">
                       <div className="bg-muted rounded-lg p-3">
                         <Link to={`/profile/${comment.user_id}`} className="font-medium hover:underline">
-                          {comment.profile?.full_name || 'Uživatel'}
+                          {comment.profile?.full_name || t('post.user')}
                         </Link>
-                        <p className="text-sm mt-1">{comment.content}</p>
+                        <p className="text-sm mt-1 break-words">{renderVIPEmojis(comment.content)}</p>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: cs })}
+                        {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: dateLocale })}
                       </p>
                     </div>
                   </div>
@@ -503,7 +503,7 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
           {user && (
             <div className="flex gap-2 pt-4 border-t border-border">
               <Input
-                placeholder="Napiš komentář..."
+                placeholder={t('post.writeComment')}
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && submitComment()}
@@ -520,19 +520,19 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Smazat příspěvek?</AlertDialogTitle>
+            <AlertDialogTitle>{t('post.deletePostConfirm')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Tato akce je nevratná. Příspěvek bude trvale smazán včetně všech komentářů a lajků.
+              {t('post.deletePostDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Zrušit</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? 'Mazání...' : 'Smazat'}
+              {deleting ? t('common.loading') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
