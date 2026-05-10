@@ -123,15 +123,16 @@ export function VIPShop() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-amber-500" />
-              VIP Obchod
+              {t('shop.title')}
+              {isVIP && <Badge className="bg-amber-500 text-white">VIP -50%</Badge>}
             </CardTitle>
             <CardDescription>
-              Odemkni exkluzivní pozadí a emoji za body z achievementů
+              {t('shop.subtitle')}
             </CardDescription>
           </div>
           <Badge variant="secondary" className="text-lg px-4 py-2 bg-amber-500/10 text-amber-500 border-amber-500/30">
             <Crown className="h-4 w-4 mr-2" />
-            {userData.total_points} bodů
+            {userData.total_points} {t('shop.points')}
           </Badge>
         </div>
       </CardHeader>
@@ -140,11 +141,11 @@ export function VIPShop() {
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="backgrounds" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
-              Pozadí
+              {t('shop.backgrounds')}
             </TabsTrigger>
             <TabsTrigger value="emojis" className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              Emoji
+              {t('shop.emojis')}
             </TabsTrigger>
           </TabsList>
 
@@ -152,7 +153,8 @@ export function VIPShop() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {premiumBackgrounds.map((bg) => {
                 const owned = isOwned(bg.id || '');
-                const canAfford = userData.total_points >= (bg.cost || 0);
+                const effectiveCost = getEffectiveCost(bg.cost || 0);
+                const canAfford = userData.total_points >= effectiveCost;
                 
                 return (
                   <div
@@ -163,7 +165,6 @@ export function VIPShop() {
                       !owned && canAfford && "hover:border-amber-500/50"
                     )}
                   >
-                    {/* Preview */}
                     <div className={cn(
                       "h-24 rounded-lg mb-3 flex items-center justify-center",
                       bg.className
@@ -171,31 +172,39 @@ export function VIPShop() {
                       {bg.animated && (
                         <div className="flex items-center gap-2 text-sm text-amber-500">
                           <Sparkles className="h-4 w-4 animate-pulse" />
-                          Animované
+                          ✨
                         </div>
                       )}
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">{bg.name}</h4>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h4 className="font-medium truncate">{bg.name}</h4>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Star className="h-3 w-3 text-amber-500" />
-                          {bg.cost} bodů
+                          {isVIP && (bg.cost || 0) > 0 ? (
+                            <>
+                              <span className="line-through opacity-60">{bg.cost}</span>
+                              <span className="text-amber-500 font-semibold">{effectiveCost}</span>
+                            </>
+                          ) : (
+                            <span>{effectiveCost}</span>
+                          )}
+                          <span>{t('shop.points')}</span>
                         </div>
                       </div>
                       
                       {owned ? (
-                        <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/30">
+                        <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/30 shrink-0">
                           <Check className="h-3 w-3 mr-1" />
-                          Vlastníš
+                          {t('shop.owned')}
                         </Badge>
                       ) : (
                         <Button
                           size="sm"
                           disabled={!canAfford || purchasing === bg.id}
-                          onClick={() => purchaseItem(bg.id || '', bg.cost || 0, 'background')}
-                          className={cn(
+                          onClick={() => purchaseItem(bg.id || '', effectiveCost, 'background')}
+                          className={cn("shrink-0",
                             canAfford 
                               ? "bg-amber-500 hover:bg-amber-600" 
                               : "bg-muted text-muted-foreground"
@@ -206,10 +215,10 @@ export function VIPShop() {
                           ) : !canAfford ? (
                             <>
                               <Lock className="h-3 w-3 mr-1" />
-                              Málo bodů
+                              {t('shop.notEnoughPoints')}
                             </>
                           ) : (
-                            'Koupit'
+                            t('shop.buy')
                           )}
                         </Button>
                       )}
@@ -224,7 +233,8 @@ export function VIPShop() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
               {premiumEmojis.map((emoji) => {
                 const owned = isOwned(emoji.id);
-                const canAfford = userData.total_points >= emoji.cost;
+                const effectiveCost = getEffectiveCost(emoji.cost);
+                const canAfford = userData.total_points >= effectiveCost;
                 
                 return (
                   <div
@@ -235,7 +245,6 @@ export function VIPShop() {
                       !owned && canAfford && "hover:border-amber-500/50"
                     )}
                   >
-                    {/* Emoji preview */}
                     <div className="h-16 w-16 mx-auto mb-3 rounded-xl bg-muted flex items-center justify-center">
                       <img src={emoji.url} alt={emoji.name} className="h-12 w-12" />
                     </div>
@@ -243,20 +252,27 @@ export function VIPShop() {
                     <h4 className="font-medium text-sm mb-1 truncate">{emoji.name}</h4>
                     <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground mb-3">
                       <Star className="h-3 w-3 text-amber-500" />
-                      {emoji.cost} bodů
+                      {isVIP && emoji.cost > 0 ? (
+                        <>
+                          <span className="line-through opacity-60">{emoji.cost}</span>
+                          <span className="text-amber-500 font-semibold">{effectiveCost}</span>
+                        </>
+                      ) : (
+                        <span>{effectiveCost}</span>
+                      )}
                     </div>
                     
                     {owned ? (
                       <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/30 text-xs">
                         <Check className="h-3 w-3 mr-1" />
-                        Vlastníš
+                        {t('shop.owned')}
                       </Badge>
                     ) : (
                       <Button
                         size="sm"
                         className="w-full text-xs"
                         disabled={!canAfford || purchasing === emoji.id}
-                        onClick={() => purchaseItem(emoji.id, emoji.cost, 'emoji')}
+                        onClick={() => purchaseItem(emoji.id, effectiveCost, 'emoji')}
                         variant={canAfford ? "default" : "secondary"}
                       >
                         {purchasing === emoji.id ? (
@@ -264,7 +280,7 @@ export function VIPShop() {
                         ) : !canAfford ? (
                           <Lock className="h-3 w-3" />
                         ) : (
-                          'Koupit'
+                          t('shop.buy')
                         )}
                       </Button>
                     )}
@@ -279,11 +295,10 @@ export function VIPShop() {
         <div className="mt-6 p-4 rounded-lg bg-muted/30 border border-border">
           <h4 className="font-medium flex items-center gap-2 mb-2">
             <Crown className="h-4 w-4 text-amber-500" />
-            Jak získat body?
+            {t('shop.howToEarn')}
           </h4>
           <p className="text-sm text-muted-foreground">
-            Body získáváš plněním achievementů - přidávej příspěvky, lajkuj, komentuj a získávej přátele. 
-            Každý achievement ti dá body, které můžeš utratit v obchodě.
+            {t('shop.howToEarnText')}
           </p>
         </div>
       </CardContent>
