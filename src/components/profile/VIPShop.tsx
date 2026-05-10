@@ -7,6 +7,8 @@ import { ShoppingCart, Sparkles, Palette, Crown, Check, Lock, Star } from 'lucid
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useTranslation } from 'react-i18next';
 import { VIP_BACKGROUNDS, VIP_IMAGE_EMOJIS } from '@/components/social/VIPPostFeatures';
 import { cn } from '@/lib/utils';
 
@@ -18,9 +20,14 @@ interface UserShopData {
 export function VIPShop() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isVIP } = useUserRole();
+  const { t } = useTranslation();
   const [userData, setUserData] = useState<UserShopData>({ total_points: 0, unlocked_items: [] });
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+
+  // VIP gets 50% discount on all paid items
+  const getEffectiveCost = (cost: number) => isVIP ? Math.ceil(cost / 2) : cost;
 
   useEffect(() => {
     const fetchUserData = async () => {
