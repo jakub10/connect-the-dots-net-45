@@ -1,0 +1,89 @@
+// Translates user-generated content (posts, comments) to a target language
+// using Lovable AI Gateway. No DB writes — pure proxy.
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const LANG_NAMES: Record<string, string> = {
+  cs: 'Czech',
+  sk: 'Slovak',
+  en: 'English',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
+
+    const body = await req.json().catch(() => ({}));
+    const text = String(body.text ?? '').slice(0, 4000);
+    const targetLang = String(body.targetLang ?? 'en');
+
+    if (!text.trim()) {
+      return new Response(JSON.stringify({ translated: '' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const targetName = LANG_NAMES[targetLang] ?? 'English';
+
+    // Preserve [img:xxx] tokens — strip, translate, re-insert in order
+    const tokens: string[] = [];
+    const placeholderText = text.replace(/\[img:[a-z-]+\]/g, (m) => {
+      tokens.push(m);
+      return `__IMG${tokens.length - 1}__`;
+    });
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-3-flash-preview',
+        messages: [
+          {
+            role: 'system',
+            content: `You translate user-generated social media posts to ${targetName}. Preserve emojis, hashtags, mentions, and any __IMG\\d+__ placeholders exactly. Output ONLY the translated text, no quotes, no explanations.`,
+          },
+          { role: 'user', content: placeholderText },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('AI gateway error:', response.status, errText);
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: 'Rate limited, try again later' }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw new Error(`AI gateway error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    let translated: string = data.choices?.[0]?.message?.content ?? '';
+
+    // Restore tokens
+    translated = translated.replace(/__IMG(\d+)__/g, (_m, idx) => tokens[Number(idx)] ?? '');
+
+    return new Response(JSON.stringify({ translated }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('translate-content error:', error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
