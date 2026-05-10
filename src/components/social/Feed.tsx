@@ -166,7 +166,7 @@ export function Feed({ currentProfile }: FeedProps) {
       {posts.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center">
           <p className="text-muted-foreground">
-            Zatím žádné příspěvky. Buď první, kdo něco sdílí!
+            <span className="text-gradient-flow font-semibold">Zatím žádné příspěvky.</span> Buď první, kdo něco sdílí!
           </p>
         </div>
       ) : (
