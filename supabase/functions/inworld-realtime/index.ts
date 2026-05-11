@@ -99,18 +99,29 @@ Deno.serve((req) => {
 
     api.on("message", (raw: Uint8Array | string) => {
       const data = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
-      if (setup < 2) {
-        try {
-          const t = JSON.parse(data).type;
+      try {
+        const event = JSON.parse(data);
+        const t = event.type;
+        if (setup < 2) {
           if (t === "session.created") {
             api!.send(SESSION_CFG);
             setup = 1;
           } else if (t === "session.updated" && setup === 1) {
-            api!.send(GREET);
+            createResponse("Krátce pozdrav uživatele česky a řekni, že si budeš pamatovat průběh tohoto hovoru.");
             setup = 2;
           }
-        } catch (_) { /* ignore */ }
-      }
+        }
+
+        if (t === "conversation.item.input_audio_transcription.completed") {
+          remember("user", event.transcript);
+          createResponse("Odpověz na poslední repliku uživatele.");
+        } else if (t === "response.output_audio_transcript.delta" || t === "response.audio_transcript.delta") {
+          assistantDraft += event.delta || "";
+        } else if (t === "response.output_audio_transcript.done" || t === "response.audio_transcript.done") {
+          remember("assistant", event.transcript || assistantDraft);
+          assistantDraft = "";
+        }
+      } catch (_) { /* ignore */ }
       if (browser.readyState === WebSocket.OPEN) {
         browser.send(data);
       }
