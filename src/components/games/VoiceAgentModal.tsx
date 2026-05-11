@@ -184,7 +184,6 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
   if (!isOpen) return null;
 
   const isActive = status === 'listening' || status === 'speaking';
-  const settingsDisabled = status !== 'idle' && status !== 'error';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -205,16 +204,8 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
         </div>
 
         <div className="p-6 flex flex-col gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t('voice.voiceLabel')}</label>
-            <Select value={voice} onValueChange={setVoice} disabled={settingsDisabled}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {VOICES.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            Hlas je pevně nastavený na českou výslovnost Hana.
           </div>
 
           <div className="flex flex-col items-center gap-4 pt-2">
