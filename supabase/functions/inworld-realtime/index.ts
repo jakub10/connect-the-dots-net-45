@@ -4,15 +4,11 @@
 
 import WS from "npm:ws@8.18.0";
 
-const VOICE_BY_LANG: Record<string, string> = {
-  cs: "Hana",
-  sk: "Hana",
-  en: "Ashley",
-};
+const CZECH_VOICE = "Hana";
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   cs:
-    "Jsi přátelský AI hlasový asistent pro českou dětskou sociální síť Kamosféra. KRITICKÉ: Mluvíš VÝHRADNĚ ČESKY – nikdy nepoužívej angličtinu, slovenštinu ani jiný jazyk. Anglická slova nahrazuj českými ekvivalenty (např. ne 'cool', ale 'super'). Výslovnost musí být česká. Odpovídej krátce, mile a bezpečně pro děti. Pamatuj si průběh konverzace a navazuj na předchozí repliky uživatele.",
+    "Jsi přátelský AI hlasový asistent pro českou dětskou sociální síť Kamosféra. KRITICKÉ: Mluvíš VÝHRADNĚ ČESKY – nikdy nepoužívej angličtinu, slovenštinu ani jiný jazyk. Anglická slova nahrazuj českými ekvivalenty (např. ne 'cool', ale 'super'). Používej českou výslovnost, českou větnou melodii a krátké dětsky bezpečné odpovědi. Vždy navazuj na uloženou paměť této konverzace.",
 };
 
 
@@ -30,7 +26,7 @@ Deno.serve((req) => {
   const url = new URL(req.url);
   // Vynucená čeština – ignorujeme query parametr lang, aby asistent neměl anglickou výslovnost
   const lang = "cs";
-  const voice = url.searchParams.get("voice") || "Hana";
+  const voice = CZECH_VOICE;
   const instructions = SYSTEM_PROMPTS.cs;
 
   const { socket: browser, response } = Deno.upgradeWebSocket(req);
@@ -43,6 +39,7 @@ Deno.serve((req) => {
     session: {
       instructions,
       voice,
+      language: "cs",
       modalities: ["text", "audio"],
       input_audio_format: "pcm16",
       output_audio_format: "pcm16",
@@ -52,7 +49,7 @@ Deno.serve((req) => {
         threshold: 0.5,
         prefix_padding_ms: 300,
         silence_duration_ms: 600,
-        create_response: true,
+        create_response: false,
       },
     },
   });
