@@ -2,13 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, X, Loader2, Volume2 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 interface VoiceAgentModalProps {
@@ -20,14 +13,8 @@ const BASE_WS = `${import.meta.env.VITE_SUPABASE_URL.replace(/^http/, 'ws')}/fun
 
 type Status = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
 
-const VOICES = [
-  { id: 'Hana', label: 'Hana (žena)' },
-  { id: 'Adam', label: 'Adam (muž)' },
-];
-
 export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
   const { t } = useTranslation();
-  const [voice, setVoice] = useState<string>('Hana');
   const [status, setStatus] = useState<Status>('idle');
   const [transcript, setTranscript] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -120,7 +107,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
       });
       streamRef.current = stream;
 
-      const wsUrl = `${BASE_WS}?lang=cs&voice=${encodeURIComponent(voice)}`;
+      const wsUrl = `${BASE_WS}?lang=cs&voice=Hana`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -197,7 +184,6 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
   if (!isOpen) return null;
 
   const isActive = status === 'listening' || status === 'speaking';
-  const settingsDisabled = status !== 'idle' && status !== 'error';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -218,16 +204,8 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
         </div>
 
         <div className="p-6 flex flex-col gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">{t('voice.voiceLabel')}</label>
-            <Select value={voice} onValueChange={setVoice} disabled={settingsDisabled}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {VOICES.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            Hlas je pevně nastavený na českou výslovnost Hana.
           </div>
 
           <div className="flex flex-col items-center gap-4 pt-2">

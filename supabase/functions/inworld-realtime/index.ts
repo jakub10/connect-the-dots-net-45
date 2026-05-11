@@ -4,15 +4,11 @@
 
 import WS from "npm:ws@8.18.0";
 
-const VOICE_BY_LANG: Record<string, string> = {
-  cs: "Hana",
-  sk: "Hana",
-  en: "Ashley",
-};
+const CZECH_VOICE = "Hana";
 
 const SYSTEM_PROMPTS: Record<string, string> = {
   cs:
-    "Jsi přátelský AI hlasový asistent pro českou dětskou sociální síť Kamosféra. KRITICKÉ: Mluvíš VÝHRADNĚ ČESKY – nikdy nepoužívej angličtinu, slovenštinu ani jiný jazyk. Anglická slova nahrazuj českými ekvivalenty (např. ne 'cool', ale 'super'). Výslovnost musí být česká. Odpovídej krátce, mile a bezpečně pro děti. Pamatuj si průběh konverzace a navazuj na předchozí repliky uživatele.",
+    "Jsi přátelský AI hlasový asistent pro českou dětskou sociální síť Kamosféra. KRITICKÉ: Mluvíš VÝHRADNĚ ČESKY – nikdy nepoužívej angličtinu, slovenštinu ani jiný jazyk. Anglická slova nahrazuj českými ekvivalenty (např. ne 'cool', ale 'super'). Používej českou výslovnost, českou větnou melodii a krátké dětsky bezpečné odpovědi. Vždy navazuj na uloženou paměť této konverzace.",
 };
 
 
@@ -30,7 +26,7 @@ Deno.serve((req) => {
   const url = new URL(req.url);
   // Vynucená čeština – ignorujeme query parametr lang, aby asistent neměl anglickou výslovnost
   const lang = "cs";
-  const voice = url.searchParams.get("voice") || "Hana";
+  const voice = CZECH_VOICE;
   const instructions = SYSTEM_PROMPTS.cs;
 
   const { socket: browser, response } = Deno.upgradeWebSocket(req);
@@ -43,6 +39,7 @@ Deno.serve((req) => {
     session: {
       instructions,
       voice,
+      language: "cs",
       modalities: ["text", "audio"],
       input_audio_format: "pcm16",
       output_audio_format: "pcm16",
@@ -52,27 +49,41 @@ Deno.serve((req) => {
         threshold: 0.5,
         prefix_padding_ms: 300,
         silence_duration_ms: 600,
-        create_response: true,
+        create_response: false,
       },
-    },
-  });
-
-  const GREET = JSON.stringify({
-    type: "response.create",
-    response: {
-      modalities: ["audio", "text"],
-      instructions:
-        lang === "en"
-          ? "Greet the user briefly in English."
-          : lang === "sk"
-          ? "Stručne pozdrav používateľa po slovensky."
-          : "Krátce pozdrav uživatele česky.",
     },
   });
 
   let api: WS | null = null;
   let setup = 0;
   const pending: string[] = [];
+  const memory: Array<{ role: "user" | "assistant"; content: string }> = [];
+  let assistantDraft = "";
+
+  const remember = (role: "user" | "assistant", content?: string) => {
+    const clean = (content || "").replace(/\s+/g, " ").trim();
+    if (!clean) return;
+    memory.push({ role, content: clean });
+    if (memory.length > 12) memory.splice(0, memory.length - 12);
+  };
+
+  const memoryInstructions = (task: string) => {
+    const history = memory.length
+      ? memory.map((m) => `${m.role === "user" ? "Uživatel" : "Asistent"}: ${m.content}`).join("\n")
+      : "Zatím žádná předchozí replika.";
+    return `${instructions}\n\nPAMĚŤ AKTUÁLNÍ KONVERZACE:\n${history}\n\n${task} Mluv česky a navazuj na to, co už uživatel řekl.`;
+  };
+
+  const createResponse = (task = "Odpověz uživateli.") => {
+    if (!api || api.readyState !== WS.OPEN) return;
+    api.send(JSON.stringify({
+      type: "response.create",
+      response: {
+        modalities: ["audio", "text"],
+        instructions: memoryInstructions(task),
+      },
+    }));
+  };
 
   const connectInworld = () => {
     api = new WS(inworldUrl, {
@@ -88,18 +99,29 @@ Deno.serve((req) => {
 
     api.on("message", (raw: Uint8Array | string) => {
       const data = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
-      if (setup < 2) {
-        try {
-          const t = JSON.parse(data).type;
+      try {
+        const event = JSON.parse(data);
+        const t = event.type;
+        if (setup < 2) {
           if (t === "session.created") {
             api!.send(SESSION_CFG);
             setup = 1;
           } else if (t === "session.updated" && setup === 1) {
-            api!.send(GREET);
+            createResponse("Krátce pozdrav uživatele česky a řekni, že si budeš pamatovat průběh tohoto hovoru.");
             setup = 2;
           }
-        } catch (_) { /* ignore */ }
-      }
+        }
+
+        if (t === "conversation.item.input_audio_transcription.completed") {
+          remember("user", event.transcript);
+          createResponse("Odpověz na poslední repliku uživatele.");
+        } else if (t === "response.output_audio_transcript.delta" || t === "response.audio_transcript.delta") {
+          assistantDraft += event.delta || "";
+        } else if (t === "response.output_audio_transcript.done" || t === "response.audio_transcript.done") {
+          remember("assistant", event.transcript || assistantDraft);
+          assistantDraft = "";
+        }
+      } catch (_) { /* ignore */ }
       if (browser.readyState === WebSocket.OPEN) {
         browser.send(data);
       }
