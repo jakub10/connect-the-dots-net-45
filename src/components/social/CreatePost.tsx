@@ -187,8 +187,8 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-3 border-t border-border mt-3">
-            <div className="flex gap-1">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-border mt-3 flex-wrap">
+            <div className="flex gap-0 sm:gap-1 flex-wrap">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -199,7 +199,7 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-primary"
+                className="h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-primary"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Image className="h-5 w-5" />
@@ -207,7 +207,7 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
               
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                  <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-primary">
                     <Smile className="h-5 w-5" />
                   </Button>
                 </PopoverTrigger>
@@ -223,7 +223,7 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
                 </PopoverContent>
               </Popover>
               
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+              <Button variant="ghost" size="icon" className="h-9 w-9 sm:h-10 sm:w-10 text-muted-foreground hover:text-primary">
                 <MapPin className="h-5 w-5" />
               </Button>
               
@@ -239,14 +239,15 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
             <Button
               onClick={handleSubmit}
               disabled={(!content.trim() && !selectedImage) || isSubmitting}
-              className="gap-2"
+              size="sm"
+              className="gap-2 shrink-0"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              Publikovat
+              <span className="hidden sm:inline">Publikovat</span>
             </Button>
           </div>
         </div>
