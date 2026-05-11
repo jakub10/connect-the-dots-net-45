@@ -30,12 +30,11 @@ Deno.serve((req) => {
     return new Response("INWORLD_API_KEY not configured", { status: 500 });
   }
 
-  // Vynucená čeština – ignorujeme query parametry, aby se asistent nepřepínal do EN
+  const url = new URL(req.url);
+  // Vynucená čeština – ignorujeme query parametr lang, aby asistent neměl anglickou výslovnost
   const lang = "cs";
   const voice = url.searchParams.get("voice") || "Hana";
   const instructions = SYSTEM_PROMPTS.cs;
-  // (URL stále potřebujeme níže)
-  const url = new URL(req.url);
 
   const { socket: browser, response } = Deno.upgradeWebSocket(req);
 
