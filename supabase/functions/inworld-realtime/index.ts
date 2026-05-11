@@ -54,22 +54,36 @@ Deno.serve((req) => {
     },
   });
 
-  const GREET = JSON.stringify({
-    type: "response.create",
-    response: {
-      modalities: ["audio", "text"],
-      instructions:
-        lang === "en"
-          ? "Greet the user briefly in English."
-          : lang === "sk"
-          ? "Stručne pozdrav používateľa po slovensky."
-          : "Krátce pozdrav uživatele česky.",
-    },
-  });
-
   let api: WS | null = null;
   let setup = 0;
   const pending: string[] = [];
+  const memory: Array<{ role: "user" | "assistant"; content: string }> = [];
+  let assistantDraft = "";
+
+  const remember = (role: "user" | "assistant", content?: string) => {
+    const clean = (content || "").replace(/\s+/g, " ").trim();
+    if (!clean) return;
+    memory.push({ role, content: clean });
+    if (memory.length > 12) memory.splice(0, memory.length - 12);
+  };
+
+  const memoryInstructions = (task: string) => {
+    const history = memory.length
+      ? memory.map((m) => `${m.role === "user" ? "Uživatel" : "Asistent"}: ${m.content}`).join("\n")
+      : "Zatím žádná předchozí replika.";
+    return `${instructions}\n\nPAMĚŤ AKTUÁLNÍ KONVERZACE:\n${history}\n\n${task} Mluv česky a navazuj na to, co už uživatel řekl.`;
+  };
+
+  const createResponse = (task = "Odpověz uživateli.") => {
+    if (!api || api.readyState !== WS.OPEN) return;
+    api.send(JSON.stringify({
+      type: "response.create",
+      response: {
+        modalities: ["audio", "text"],
+        instructions: memoryInstructions(task),
+      },
+    }));
+  };
 
   const connectInworld = () => {
     api = new WS(inworldUrl, {
