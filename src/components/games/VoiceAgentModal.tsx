@@ -19,37 +19,15 @@ interface VoiceAgentModalProps {
 const BASE_WS = `${import.meta.env.VITE_SUPABASE_URL.replace(/^http/, 'ws')}/functions/v1/inworld-realtime`;
 
 type Status = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
-type VoiceLang = 'cs' | 'sk' | 'en';
 
-const VOICES: Record<VoiceLang, { id: string; label: string }[]> = {
-  cs: [
-    { id: 'Hana', label: 'Hana (žena)' },
-    { id: 'Adam', label: 'Adam (muž)' },
-  ],
-  sk: [
-    { id: 'Hana', label: 'Hana (žena)' },
-    { id: 'Adam', label: 'Adam (muž)' },
-  ],
-  en: [
-    { id: 'Ashley', label: 'Ashley (female)' },
-    { id: 'Edward', label: 'Edward (male)' },
-    { id: 'Alex', label: 'Alex (neutral)' },
-  ],
-};
-
-const LANG_LABELS: Record<VoiceLang, string> = {
-  cs: '🇨🇿 Čeština',
-  sk: '🇸🇰 Slovenčina',
-  en: '🇬🇧 English',
-};
+const VOICES = [
+  { id: 'Hana', label: 'Hana (žena)' },
+  { id: 'Adam', label: 'Adam (muž)' },
+];
 
 export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
-  const { t, i18n } = useTranslation();
-  const initial = (['cs', 'sk', 'en'].includes(i18n.resolvedLanguage || '')
-    ? (i18n.resolvedLanguage as VoiceLang)
-    : 'cs');
-  const [lang, setLang] = useState<VoiceLang>(initial);
-  const [voice, setVoice] = useState<string>(VOICES[initial][0].id);
+  const { t } = useTranslation();
+  const [voice, setVoice] = useState<string>('Hana');
   const [status, setStatus] = useState<Status>('idle');
   const [transcript, setTranscript] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -92,11 +70,6 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     return () => cleanup();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
-
-  // adjust default voice when language changes
-  useEffect(() => {
-    setVoice(VOICES[lang][0].id);
-  }, [lang]);
 
   const playNext = () => {
     const ctx = ctxRef.current;
@@ -147,7 +120,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
       });
       streamRef.current = stream;
 
-      const wsUrl = `${BASE_WS}?lang=${lang}&voice=${encodeURIComponent(voice)}`;
+      const wsUrl = `${BASE_WS}?lang=cs&voice=${encodeURIComponent(voice)}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -236,7 +209,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
             </div>
             <div>
               <h3 className="font-semibold">{t('voice.title')}</h3>
-              <p className="text-xs text-muted-foreground">{t('voice.subtitle')}</p>
+              <p className="text-xs text-muted-foreground">🇨🇿 Čeština</p>
             </div>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
@@ -245,29 +218,16 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
         </div>
 
         <div className="p-6 flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t('voice.languageLabel')}</label>
-              <Select value={lang} onValueChange={(v) => setLang(v as VoiceLang)} disabled={settingsDisabled}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(['cs', 'sk', 'en'] as VoiceLang[]).map((l) => (
-                    <SelectItem key={l} value={l}>{LANG_LABELS[l]}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t('voice.voiceLabel')}</label>
-              <Select value={voice} onValueChange={setVoice} disabled={settingsDisabled}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {VOICES[lang].map((v) => (
-                    <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">{t('voice.voiceLabel')}</label>
+            <Select value={voice} onValueChange={setVoice} disabled={settingsDisabled}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {VOICES.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col items-center gap-4 pt-2">
