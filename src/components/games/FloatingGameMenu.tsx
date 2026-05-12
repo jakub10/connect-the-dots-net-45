@@ -45,7 +45,7 @@ export function FloatingGameMenu() {
     <>
       {/* Menu Items */}
       <div className={cn(
-        "fixed bottom-44 right-4 md:bottom-26 md:right-6 z-[60] transition-all duration-300",
+        "fixed bottom-44 right-4 md:bottom-[6.5rem] md:right-6 z-[60] transition-all duration-300",
         isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
         <div className="flex flex-col-reverse gap-3 mb-3">
