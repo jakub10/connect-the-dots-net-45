@@ -98,7 +98,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  const getCzechVoice = () => {
+  function getCzechVoice() {
     const voices = voicesRef.current.length ? voicesRef.current : window.speechSynthesis?.getVoices?.() || [];
     return (
       voices.find((voice) => voice.lang?.toLowerCase().startsWith('cs')) ||
@@ -107,14 +107,14 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     );
   };
 
-  const stopRecognitionOnly = () => {
+  function stopRecognitionOnly() {
     try { recognitionRef.current?.onend && (recognitionRef.current.onend = null); } catch {}
     try { recognitionRef.current?.stop(); } catch {}
     try { recognitionRef.current?.abort(); } catch {}
     recognitionRef.current = null;
   };
 
-  const speak = (text: string) => {
+  function speak(text: string) {
     if (!activeRef.current || !text.trim()) return;
 
     window.speechSynthesis.cancel();
@@ -140,7 +140,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     window.speechSynthesis.speak(utterance);
   };
 
-  const askAssistant = async (userText: string) => {
+  async function askAssistant(userText: string) {
     const userMessage: Message = { role: 'user', content: userText };
     const nextMemory = [...memory, userMessage].slice(-MAX_MEMORY_MESSAGES);
 
@@ -223,7 +223,7 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     }
   };
 
-  const startRecognition = () => {
+  function startRecognition() {
     if (!activeRef.current || speakingRef.current) return;
 
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -274,13 +274,13 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     }
   };
 
-  const start = async () => {
+  async function start() {
     setErrorMsg('');
     activeRef.current = true;
     startRecognition();
   };
 
-  const stop = () => {
+  function stop() {
     activeRef.current = false;
     speakingRef.current = false;
     stopRecognitionOnly();
@@ -288,11 +288,11 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     setStatus('idle');
   };
 
-  const clearMemory = () => {
+  function clearMemory() {
     localStorage.removeItem(MEMORY_KEY);
     setMemory([]);
     setTranscript('');
-  };
+  }
 
   if (!isOpen) return null;
 
