@@ -73,14 +73,6 @@ export function useAchievements() {
               title: `🎉 Achievement odemčen!`,
               description: `${achievement.icon} ${achievement.name} - +${achievement.points} bodů`,
             });
-
-            // Update total points
-            await supabase
-              .from('user_stats')
-              .update({ 
-                total_points: stats.total_points + achievement.points 
-              })
-              .eq('user_id', user.id);
           }
         }
       }
