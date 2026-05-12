@@ -45,7 +45,7 @@ export function FloatingGameMenu() {
     <>
       {/* Menu Items */}
       <div className={cn(
-        "fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 transition-all duration-300",
+        "fixed bottom-44 right-4 md:bottom-[6.5rem] md:right-6 z-[60] transition-all duration-300",
         isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
         <div className="flex flex-col-reverse gap-3 mb-3">
@@ -75,7 +75,8 @@ export function FloatingGameMenu() {
       {/* Main FAB Button with animated lines */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+        className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-[55] w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
+        aria-label={isOpen ? 'Zavřít rychlé menu' : 'Otevřít rychlé menu'}
       >
         <div className="relative w-6 h-6 flex flex-col justify-center items-center">
           <span

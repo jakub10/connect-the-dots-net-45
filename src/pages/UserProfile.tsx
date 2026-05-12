@@ -316,7 +316,7 @@ const UserProfile = () => {
             
             <CardHeader className="relative pt-0">
               {/* Avatar */}
-              <div className="absolute -top-16 left-6">
+              <div className="pointer-events-none absolute -top-16 left-6 z-0">
                 <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
                   <AvatarImage src={profile.avatar_url || ''} />
                   <AvatarFallback className="text-4xl bg-primary/10">
@@ -326,47 +326,47 @@ const UserProfile = () => {
               </div>
 
               {/* Action buttons */}
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="relative z-10 flex min-h-[4.5rem] flex-wrap justify-end gap-2 pt-3 pl-36 sm:min-h-0 sm:pl-0">
                 {!isOwnProfile && user && (
                   <>
                     {friendshipStatus === 'none' && (
-                      <Button variant="outline" size="sm" onClick={sendFriendRequest}>
+                      <Button variant="outline" size="sm" onClick={sendFriendRequest} className="shrink-0">
                         <UserPlus className="h-4 w-4 mr-2" />
                         Přidat přítele
                       </Button>
                     )}
                     {friendshipStatus === 'pending_sent' && (
-                      <Button variant="outline" size="sm" disabled>
+                      <Button variant="outline" size="sm" disabled className="shrink-0">
                         <UserCheck className="h-4 w-4 mr-2" />
                         Žádost odeslána
                       </Button>
                     )}
                     {friendshipStatus === 'pending_received' && (
                       <>
-                        <Button variant="default" size="sm" onClick={acceptFriendRequest}>
+                        <Button variant="default" size="sm" onClick={acceptFriendRequest} className="shrink-0">
                           <Check className="h-4 w-4 mr-2" />
                           Přijmout
                         </Button>
-                        <Button variant="outline" size="sm" onClick={declineFriendRequest}>
+                        <Button variant="outline" size="sm" onClick={declineFriendRequest} className="shrink-0">
                           <XIcon className="h-4 w-4 mr-2" />
                           Odmítnout
                         </Button>
                       </>
                     )}
                     {friendshipStatus === 'accepted' && (
-                      <Button variant="outline" size="sm" disabled>
+                      <Button variant="outline" size="sm" disabled className="shrink-0">
                         <UserCheck className="h-4 w-4 mr-2" />
                         Přátelé
                       </Button>
                     )}
-                    <Button size="sm" onClick={startConversation}>
+                    <Button size="sm" onClick={startConversation} className="shrink-0">
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Zpráva
                     </Button>
                   </>
                 )}
                 {isOwnProfile && (
-                  <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/profile')} className="shrink-0">
                     Upravit profil
                   </Button>
                 )}

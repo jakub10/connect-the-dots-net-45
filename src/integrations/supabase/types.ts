@@ -678,6 +678,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_user_achievements: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       creator_ban_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: boolean
