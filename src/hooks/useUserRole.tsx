@@ -5,9 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 
 type AppRole = 'user' | 'vip' | 'creator';
 
-const VIP_CODE = 'EdKubvIp@HK.SK';
-const CREATOR_PASSWORD = 'KshsNatVurCe';
-
 export function useUserRole() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -37,89 +34,40 @@ export function useUserRole() {
     setLoading(false);
   };
 
-  const activateVIP = useCallback(async (code: string): Promise<boolean> => {
+  const activateRole = async (role: 'vip' | 'creator', code: string): Promise<boolean> => {
     if (!user) return false;
-    
-    if (code !== VIP_CODE) {
-      toast({
-        title: 'Neplatný kód',
-        description: 'VIP kód není správný.',
-        variant: 'destructive',
-      });
-      return false;
-    }
 
-    // Check if already VIP
-    if (roles.includes('vip')) {
+    if (roles.includes(role)) {
       toast({
-        title: 'Již máte VIP',
-        description: 'Váš účet už má VIP status.',
+        title: role === 'vip' ? 'Již máte VIP' : 'Již jste tvůrce',
+        description: role === 'vip' ? 'Váš účet už má VIP status.' : 'Váš účet už má status tvůrce.',
       });
       return true;
     }
 
-    const { error } = await supabase
-      .from('user_roles')
-      .insert({ user_id: user.id, role: 'vip' });
+    const { data, error } = await supabase.functions.invoke('activate-role', {
+      body: { role, code },
+    });
 
-    if (error) {
+    if (error || !data?.success) {
       toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se aktivovat VIP.',
+        title: role === 'vip' ? 'Neplatný kód' : 'Nesprávné heslo',
+        description: role === 'vip' ? 'VIP kód není správný.' : 'Heslo tvůrce není správné.',
         variant: 'destructive',
       });
       return false;
     }
 
-    setRoles(prev => [...prev, 'vip']);
+    setRoles(prev => [...prev, role]);
     toast({
-      title: '🌟 VIP Aktivováno!',
-      description: 'Nyní máte přístup k VIP funkcím.',
+      title: role === 'vip' ? '🌟 VIP Aktivováno!' : '👑 Tvůrce Aktivován!',
+      description: role === 'vip' ? 'Nyní máte přístup k VIP funkcím.' : 'Nyní máte plná oprávnění tvůrce.',
     });
     return true;
-  }, [user, roles, toast]);
+  };
 
-  const activateCreator = useCallback(async (password: string): Promise<boolean> => {
-    if (!user) return false;
-    
-    if (password !== CREATOR_PASSWORD) {
-      toast({
-        title: 'Nesprávné heslo',
-        description: 'Heslo tvůrce není správné.',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    // Check if already creator
-    if (roles.includes('creator')) {
-      toast({
-        title: 'Již jste tvůrce',
-        description: 'Váš účet už má status tvůrce.',
-      });
-      return true;
-    }
-
-    const { error } = await supabase
-      .from('user_roles')
-      .insert({ user_id: user.id, role: 'creator' });
-
-    if (error) {
-      toast({
-        title: 'Chyba',
-        description: 'Nepodařilo se aktivovat status tvůrce.',
-        variant: 'destructive',
-      });
-      return false;
-    }
-
-    setRoles(prev => [...prev, 'creator']);
-    toast({
-      title: '👑 Tvůrce Aktivován!',
-      description: 'Nyní máte plná oprávnění tvůrce.',
-    });
-    return true;
-  }, [user, roles, toast]);
+  const activateVIP = useCallback((code: string) => activateRole('vip', code), [user, roles, toast]);
+  const activateCreator = useCallback((password: string) => activateRole('creator', password), [user, roles, toast]);
 
   const isVIP = roles.includes('vip');
   const isCreator = roles.includes('creator');
