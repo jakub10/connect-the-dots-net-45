@@ -452,6 +452,27 @@ export type Database = {
         }
         Relationships: []
       }
+      realtime_ws_tickets: {
+        Row: {
+          created_at: string
+          expires_at: string
+          ticket: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          ticket?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          ticket?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       saved_posts: {
         Row: {
           created_at: string
@@ -697,6 +718,24 @@ export type Database = {
         }
         Relationships: []
       }
+      vip_items: {
+        Row: {
+          item_id: string
+          item_type: string
+          price: number
+        }
+        Insert: {
+          item_id: string
+          item_type: string
+          price: number
+        }
+        Update: {
+          item_id?: string
+          item_type?: string
+          price?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -706,6 +745,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      create_realtime_ws_ticket: { Args: never; Returns: string }
       creator_ban_user: {
         Args: { _reason?: string; _user_id: string }
         Returns: boolean
@@ -725,8 +765,12 @@ export type Database = {
       is_group_public: { Args: { _group_id: string }; Returns: boolean }
       is_user_banned: { Args: { _user_id: string }; Returns: boolean }
       purchase_vip_item: {
-        Args: { _cost: number; _item_id: string; _item_type: string }
+        Args: { _cost?: number; _item_id: string; _item_type: string }
         Returns: Json
+      }
+      submit_game_score: {
+        Args: { _game_type: string; _score: number }
+        Returns: undefined
       }
     }
     Enums: {
