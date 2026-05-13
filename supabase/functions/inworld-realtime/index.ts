@@ -12,7 +12,7 @@ const SYSTEM_PROMPTS: Record<string, string> = {
 };
 
 
-Deno.serve((req) => {
+Deno.serve(async (req) => {
   const upgrade = req.headers.get("upgrade") || "";
   if (upgrade.toLowerCase() !== "websocket") {
     return new Response("Expected WebSocket upgrade", { status: 426 });
@@ -24,6 +24,25 @@ Deno.serve((req) => {
   }
 
   const url = new URL(req.url);
+
+  // Authenticate via access_token query param (browsers can't set custom headers on WS)
+  const accessToken = url.searchParams.get("access_token");
+  if (!accessToken) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+  try {
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+    );
+    const { data, error } = await authClient.auth.getClaims(accessToken);
+    if (error || !data?.claims?.sub) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+  } catch (_) {
+    return new Response("Unauthorized", { status: 401 });
+  }
   // Vynucená čeština – ignorujeme query parametr lang, aby asistent neměl anglickou výslovnost
   const lang = "cs";
   const voice = CZECH_VOICE;

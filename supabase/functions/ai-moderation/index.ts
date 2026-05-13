@@ -31,7 +31,37 @@ serve(async (req) => {
       throw new Error("Supabase configuration missing");
     }
 
+    // Authenticate caller and require creator role
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authClient = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claims, error: authErr } = await authClient.auth.getClaims(token);
+    if (authErr || !claims?.claims?.sub) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const { data: roleRow } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', claims.claims.sub)
+      .eq('role', 'creator')
+      .maybeSingle();
+    if (!roleRow) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Get posts from the last 24 hours that haven't been moderated yet
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
