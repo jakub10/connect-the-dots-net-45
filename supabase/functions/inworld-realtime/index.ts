@@ -25,19 +25,27 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
 
-  // Authenticate via access_token query param (browsers can't set custom headers on WS)
-  const accessToken = url.searchParams.get("access_token");
-  if (!accessToken) {
+  // Authenticate via one-time ticket (browsers can't set custom headers on WS).
+  // The client must first call the `create_realtime_ws_ticket` RPC to obtain
+  // a short-lived ticket UUID and pass it here. The ticket is consumed on use.
+  const ticket = url.searchParams.get("ticket");
+  if (!ticket || !/^[0-9a-f-]{36}$/i.test(ticket)) {
     return new Response("Unauthorized", { status: 401 });
   }
   try {
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
-    const authClient = createClient(
+    const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const { data, error } = await authClient.auth.getClaims(accessToken);
-    if (error || !data?.claims?.sub) {
+    // Atomically consume the ticket if not expired
+    const { data: rows, error } = await admin
+      .from("realtime_ws_tickets")
+      .delete()
+      .eq("ticket", ticket)
+      .gt("expires_at", new Date().toISOString())
+      .select("user_id");
+    if (error || !rows || rows.length === 0) {
       return new Response("Unauthorized", { status: 401 });
     }
   } catch (_) {
