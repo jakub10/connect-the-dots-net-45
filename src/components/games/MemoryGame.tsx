@@ -87,17 +87,7 @@ export function MemoryGame({ isOpen, onClose }: MemoryGameProps) {
     if (!user) return;
     
     if (highScore === 0 || finalScore > highScore) {
-      await supabase
-        .from('user_game_stats')
-        .upsert({ 
-          user_id: user.id, 
-          memory_best: finalScore,
-          updated_at: new Date().toISOString()
-        });
-      
-      await supabase
-        .from('game_scores')
-        .insert({ user_id: user.id, game_type: 'memory', score: finalScore });
+      await supabase.rpc('submit_game_score', { _game_type: 'memory', _score: finalScore });
 
       setHighScore(finalScore);
       toast({
