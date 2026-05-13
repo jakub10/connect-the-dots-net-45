@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Image, Smile, MapPin, Send, X, Loader2, Sparkles } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -34,10 +34,26 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [backgroundStyle, setBackgroundStyle] = useState<PostBackgroundStyle>(null);
+  const [unlockedItems, setUnlockedItems] = useState<string[]>([]);
+  const [userPoints, setUserPoints] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const { isVIP } = useUserRole();
+
+  useEffect(() => {
+    if (!user) return;
+    const saved = localStorage.getItem(`vip_unlocked_${user.id}`);
+    if (saved) {
+      try { setUnlockedItems(JSON.parse(saved)); } catch {}
+    }
+    supabase
+      .from('user_stats')
+      .select('total_points')
+      .eq('user_id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setUserPoints(data?.total_points || 0));
+  }, [user]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -230,10 +246,14 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
               {/* Pozadí + speciální emoji - dostupné všem */}
               <VIPBackgroundPicker 
                 selectedBackground={backgroundStyle} 
-                onSelect={setBackgroundStyle} 
+                onSelect={setBackgroundStyle}
+                userPoints={userPoints}
+                unlockedBackgrounds={unlockedItems}
               />
               <VIPEmojiPicker 
-                onEmojiSelect={(emoji) => setContent(prev => prev + emoji)} 
+                onEmojiSelect={(emoji) => setContent(prev => prev + emoji)}
+                userPoints={userPoints}
+                unlockedEmojis={unlockedItems}
               />
             </div>
             <Button
