@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, X, Loader2, Volume2, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceAgentModalProps {
   isOpen: boolean;
@@ -152,11 +153,13 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     let answer = '';
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Musíš se přihlásit.');
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: [
