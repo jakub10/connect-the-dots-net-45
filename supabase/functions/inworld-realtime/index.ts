@@ -165,8 +165,38 @@ Deno.serve(async (req) => {
     connectInworld();
   };
 
+  // Allow-list of message types the browser may forward to Inworld.
+  // Anything else (especially session.update / session.create / response.create
+  // with custom instructions) would let the client override the child-safety
+  // system prompt and is rejected.
+  const ALLOWED_CLIENT_TYPES = new Set([
+    "input_audio_buffer.append",
+    "input_audio_buffer.commit",
+    "input_audio_buffer.clear",
+    "conversation.item.create",
+    "response.cancel",
+  ]);
+
   browser.onmessage = (ev) => {
-    const msg = typeof ev.data === "string" ? ev.data : "";
+    const raw = typeof ev.data === "string" ? ev.data : "";
+    if (!raw) return;
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return; // drop non-JSON
+    }
+    const t = parsed?.type;
+    if (typeof t !== "string" || !ALLOWED_CLIENT_TYPES.has(t)) {
+      console.warn("Blocked client message type:", t);
+      return;
+    }
+    // For conversation.item.create, ensure no embedded instructions override
+    if (t === "conversation.item.create" && parsed?.item?.role === "system") {
+      console.warn("Blocked client attempt to inject system item");
+      return;
+    }
+    const msg = JSON.stringify(parsed);
     if (api && api.readyState === WS.OPEN) {
       api.send(msg);
     } else {
