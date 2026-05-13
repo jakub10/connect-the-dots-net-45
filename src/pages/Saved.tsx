@@ -33,109 +33,107 @@ const Saved = () => {
   const [loading, setLoading] = useState(true);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
 
-  useEffect(() => {
-    const fetchSavedPosts = async () => {
-      if (!user) return;
+  const fetchSavedPosts = async () => {
+    if (!user) return;
 
-      // Fetch current profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('username, full_name, avatar_url')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      setCurrentProfile(profileData);
+    // Fetch current profile
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('username, full_name, avatar_url')
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-      // Fetch saved posts
-      const { data: savedData, error } = await supabase
-        .from('saved_posts')
-        .select('post_id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+    setCurrentProfile(profileData);
 
-      if (error || !savedData || savedData.length === 0) {
-        setPosts([]);
-        setLoading(false);
-        return;
-      }
+    // Fetch saved posts
+    const { data: savedData, error } = await supabase
+      .from('saved_posts')
+      .select('post_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-      const postIds = savedData.map(s => s.post_id);
-
-      // Fetch posts
-      const { data: postsData } = await supabase
-        .from('posts')
-        .select('*')
-        .in('id', postIds);
-
-      if (!postsData || postsData.length === 0) {
-        setPosts([]);
-        setLoading(false);
-        return;
-      }
-
-      // Fetch profiles
-      const userIds = [...new Set(postsData.map(p => p.user_id))];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, username, full_name, avatar_url')
-        .in('user_id', userIds);
-
-      const profilesMap = new Map(
-        profilesData?.map(p => [p.user_id, p]) || []
-      );
-
-      // Fetch likes counts
-      const { data: likesData } = await supabase
-        .from('likes')
-        .select('post_id')
-        .in('post_id', postIds);
-
-      const likesCountMap = new Map<string, number>();
-      likesData?.forEach(like => {
-        likesCountMap.set(like.post_id, (likesCountMap.get(like.post_id) || 0) + 1);
-      });
-
-      // Check user likes
-      const { data: userLikes } = await supabase
-        .from('likes')
-        .select('post_id')
-        .eq('user_id', user.id);
-
-      const userLikesSet = new Set(userLikes?.map(l => l.post_id) || []);
-
-      // Fetch comments counts
-      const { data: commentsData } = await supabase
-        .from('comments')
-        .select('post_id')
-        .in('post_id', postIds);
-
-      const commentsCountMap = new Map<string, number>();
-      commentsData?.forEach(comment => {
-        commentsCountMap.set(comment.post_id, (commentsCountMap.get(comment.post_id) || 0) + 1);
-      });
-
-      const enrichedPosts: Post[] = postsData.map(post => ({
-        ...post,
-        profile: profilesMap.get(post.user_id) as Profile | undefined,
-        likes_count: likesCountMap.get(post.id) || 0,
-        comments_count: commentsCountMap.get(post.id) || 0,
-        is_liked: userLikesSet.has(post.id),
-      }));
-
-      setPosts(enrichedPosts);
+    if (error || !savedData || savedData.length === 0) {
+      setPosts([]);
       setLoading(false);
-    };
+      return;
+    }
 
+    const postIds = savedData.map(s => s.post_id);
+
+    // Fetch posts
+    const { data: postsData } = await supabase
+      .from('posts')
+      .select('*')
+      .in('id', postIds);
+
+    if (!postsData || postsData.length === 0) {
+      setPosts([]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch profiles
+    const userIds = [...new Set(postsData.map(p => p.user_id))];
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('user_id, username, full_name, avatar_url')
+      .in('user_id', userIds);
+
+    const profilesMap = new Map(
+      profilesData?.map(p => [p.user_id, p]) || []
+    );
+
+    // Fetch likes counts
+    const { data: likesData } = await supabase
+      .from('likes')
+      .select('post_id')
+      .in('post_id', postIds);
+
+    const likesCountMap = new Map<string, number>();
+    likesData?.forEach(like => {
+      likesCountMap.set(like.post_id, (likesCountMap.get(like.post_id) || 0) + 1);
+    });
+
+    // Check user likes
+    const { data: userLikes } = await supabase
+      .from('likes')
+      .select('post_id')
+      .eq('user_id', user.id);
+
+    const userLikesSet = new Set(userLikes?.map(l => l.post_id) || []);
+
+    // Fetch comments counts
+    const { data: commentsData } = await supabase
+      .from('comments')
+      .select('post_id')
+      .in('post_id', postIds);
+
+    const commentsCountMap = new Map<string, number>();
+    commentsData?.forEach(comment => {
+      commentsCountMap.set(comment.post_id, (commentsCountMap.get(comment.post_id) || 0) + 1);
+    });
+
+    const enrichedPosts: Post[] = postsData.map(post => ({
+      ...post,
+      profile: profilesMap.get(post.user_id) as Profile | undefined,
+      likes_count: likesCountMap.get(post.id) || 0,
+      comments_count: commentsCountMap.get(post.id) || 0,
+      is_liked: userLikesSet.has(post.id),
+    }));
+
+    setPosts(enrichedPosts);
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchSavedPosts();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const refetch = () => {
+    if (!user) return;
     setLoading(true);
-    // Trigger re-fetch
-    if (user) {
-      // Same logic as useEffect, simplified refetch
-      window.location.reload();
-    }
+    fetchSavedPosts();
   };
 
   return (

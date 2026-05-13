@@ -81,11 +81,13 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
     }
 
     setSelectedImage(file);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(URL.createObjectURL(file));
   };
 
   const removeImage = () => {
     setSelectedImage(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';

@@ -47,6 +47,7 @@ export function StoryUpload({ onStoryCreated }: StoryUploadProps) {
     }
 
     setSelectedImage(file);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(URL.createObjectURL(file));
   };
 
@@ -69,12 +70,14 @@ export function StoryUpload({ onStoryCreated }: StoryUploadProps) {
         .from('posts')
         .getPublicUrl(fileName);
 
-      // Create story record
+      // Create story record with 24h expiry
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
       const { error: insertError } = await supabase
         .from('stories')
         .insert({
           user_id: user.id,
           image_url: urlData.publicUrl,
+          expires_at: expiresAt,
         });
 
       if (insertError) throw insertError;
@@ -86,7 +89,9 @@ export function StoryUpload({ onStoryCreated }: StoryUploadProps) {
 
       setIsOpen(false);
       setSelectedImage(null);
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
       setImagePreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       onStoryCreated?.();
     } catch (error) {
       console.error('Error uploading story:', error);
@@ -103,7 +108,9 @@ export function StoryUpload({ onStoryCreated }: StoryUploadProps) {
   const handleClose = () => {
     setIsOpen(false);
     setSelectedImage(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   return (
@@ -147,7 +154,9 @@ export function StoryUpload({ onStoryCreated }: StoryUploadProps) {
                   className="absolute top-2 right-2 rounded-full"
                   onClick={() => {
                     setSelectedImage(null);
+                    if (imagePreview) URL.revokeObjectURL(imagePreview);
                     setImagePreview(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
                 >
                   <X className="h-4 w-4" />

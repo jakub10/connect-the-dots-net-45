@@ -320,7 +320,7 @@ const UserProfile = () => {
                 <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
                   <AvatarImage src={profile.avatar_url || ''} />
                   <AvatarFallback className="text-4xl bg-primary/10">
-                    {profile.full_name[0]}
+                    {profile.full_name?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </div>

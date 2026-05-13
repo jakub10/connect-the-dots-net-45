@@ -469,7 +469,7 @@ const Groups = () => {
                         <div className="flex items-center gap-3">
                           <Avatar>
                             <AvatarImage src={group.avatar_url || ''} />
-                            <AvatarFallback>{group.name[0]}</AvatarFallback>
+                            <AvatarFallback>{group.name?.[0]?.toUpperCase() || "G"}</AvatarFallback>
                           </Avatar>
                           <div>
                             <CardTitle className="text-base flex items-center gap-2">
@@ -651,7 +651,7 @@ const Groups = () => {
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={profile.avatar_url || ''} />
-                          <AvatarFallback>{profile.full_name[0]}</AvatarFallback>
+                          <AvatarFallback>{profile.full_name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="text-sm font-medium">{profile.full_name}</p>

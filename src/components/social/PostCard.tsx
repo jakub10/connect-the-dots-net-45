@@ -112,17 +112,25 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
     if (isLiked) {
       setIsLiked(false);
       setLikesCount((prev) => prev - 1);
-      await supabase
+      const { error } = await supabase
         .from('likes')
         .delete()
         .eq('post_id', post.id)
         .eq('user_id', user.id);
+      if (error) {
+        setIsLiked(true);
+        setLikesCount((prev) => prev + 1);
+      }
     } else {
       setIsLiked(true);
       setLikesCount((prev) => prev + 1);
-      await supabase
+      const { error } = await supabase
         .from('likes')
         .insert({ post_id: post.id, user_id: user.id });
+      if (error) {
+        setIsLiked(false);
+        setLikesCount((prev) => prev - 1);
+      }
     }
     onLikeChange?.();
   };

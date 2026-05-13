@@ -36,7 +36,6 @@ const Settings = () => {
     return false;
   });
   const [privateAccount, setPrivateAccount] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
@@ -121,7 +120,6 @@ const Settings = () => {
         title: 'Úspěch',
         description: 'Heslo bylo změněno.',
       });
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     }
@@ -240,7 +238,7 @@ const Settings = () => {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Zadej nové heslo"
+                  placeholder="Zadej nové heslo (min. 6 znaků)"
                 />
               </div>
               <div className="space-y-2">
@@ -253,9 +251,12 @@ const Settings = () => {
                   placeholder="Zopakuj nové heslo"
                 />
               </div>
-              <Button 
-                onClick={handleChangePassword} 
-                disabled={changingPassword || !newPassword || !confirmPassword}
+              {newPassword && confirmPassword && newPassword !== confirmPassword && (
+                <p className="text-sm text-destructive">Hesla se neshodují.</p>
+              )}
+              <Button
+                onClick={handleChangePassword}
+                disabled={changingPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
               >
                 {changingPassword ? 'Měním heslo...' : 'Změnit heslo'}
               </Button>
