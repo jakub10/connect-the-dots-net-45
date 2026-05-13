@@ -61,6 +61,47 @@ export function VIPPuzzleGame({ isOpen, onClose }: VIPPuzzleGameProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, tiles]);
 
+  // Touch swipe controls for mobile
+  useEffect(() => {
+    if (!isOpen) return;
+    const el = gameRef.current;
+    if (!el) return;
+
+    let startX = 0, startY = 0, startedAt = 0;
+    const MIN_DIST = 24;
+
+    const onStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      startedAt = Date.now();
+    };
+    const onMove = (e: TouchEvent) => {
+      // prevent page scroll while swiping the board
+      e.preventDefault();
+    };
+    const onEnd = (e: TouchEvent) => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (Math.abs(dx) < MIN_DIST && Math.abs(dy) < MIN_DIST) return;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        handleMove(dx > 0 ? 'ArrowRight' : 'ArrowLeft');
+      } else {
+        handleMove(dy > 0 ? 'ArrowDown' : 'ArrowUp');
+      }
+    };
+
+    el.addEventListener('touchstart', onStart, { passive: true });
+    el.addEventListener('touchmove', onMove, { passive: false });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    return () => {
+      el.removeEventListener('touchstart', onStart);
+      el.removeEventListener('touchmove', onMove);
+      el.removeEventListener('touchend', onEnd);
+    };
+  }, [isOpen, tiles]);
+
   const fetchBestScore = async () => {
     if (!user) return;
     const { data } = await supabase
@@ -301,8 +342,18 @@ export function VIPPuzzleGame({ isOpen, onClose }: VIPPuzzleGameProps) {
 
         {/* Controls hint */}
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Použij šipky ← ↑ → ↓ pro pohyb
+          Použij šipky ← ↑ → ↓ nebo přejížděj prstem
         </p>
+
+        {/* On-screen D-pad for mobile */}
+        <div className="grid grid-cols-3 gap-2 mt-3 sm:hidden max-w-[180px] mx-auto">
+          <div />
+          <Button variant="outline" size="icon" onClick={() => handleMove('ArrowUp')}>↑</Button>
+          <div />
+          <Button variant="outline" size="icon" onClick={() => handleMove('ArrowLeft')}>←</Button>
+          <Button variant="outline" size="icon" onClick={() => handleMove('ArrowDown')}>↓</Button>
+          <Button variant="outline" size="icon" onClick={() => handleMove('ArrowRight')}>→</Button>
+        </div>
 
         {/* New Game Button */}
         <Button onClick={initGame} variant="outline" className="w-full mt-4">

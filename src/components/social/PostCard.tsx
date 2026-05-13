@@ -468,7 +468,7 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 -mx-6 px-6">
+          <ScrollArea className="flex-1 min-h-0 -mx-6 px-6 max-h-[50vh]">
             <div className="space-y-4 py-4">
               {loadingComments ? (
                 <p className="text-center text-muted-foreground">{t('common.loading')}</p>
