@@ -40,6 +40,26 @@ serve(async (req) => {
 
     const { messages } = await req.json();
 
+    // Validate messages
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: "Invalid messages" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (messages.length > 30) {
+      return new Response(JSON.stringify({ error: "Too many messages (max 30)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    for (const m of messages) {
+      if (!m || typeof m !== "object" || typeof m.content !== "string" ||
+          !["user", "assistant"].includes(m.role) || m.content.length > 2000) {
+        return new Response(JSON.stringify({ error: "Invalid message format or content too long (max 2000 chars)" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
