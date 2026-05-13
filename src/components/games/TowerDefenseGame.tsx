@@ -223,18 +223,8 @@ export function TowerDefenseGame({ isOpen, onClose }: TowerDefenseGameProps) {
     
     const currentBest = currentData?.tower_defense_best || 0;
     if (newScore <= currentBest) return;
-    
-    await supabase
-      .from('user_game_stats')
-      .upsert({ 
-        user_id: user.id, 
-        tower_defense_best: newScore,
-        updated_at: new Date().toISOString()
-      });
-    
-    await supabase
-      .from('game_scores')
-      .insert({ user_id: user.id, game_type: 'tower_defense', score: newScore });
+
+    await supabase.rpc('submit_game_score', { _game_type: 'tower_defense', _score: newScore });
 
     setHighScore(newScore);
     toast({
