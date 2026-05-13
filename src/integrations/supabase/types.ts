@@ -673,6 +673,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_unlocked_items: {
+        Row: {
+          id: string
+          item_id: string
+          item_type: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          item_type: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          item_type?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -700,6 +724,10 @@ export type Database = {
       }
       is_group_public: { Args: { _group_id: string }; Returns: boolean }
       is_user_banned: { Args: { _user_id: string }; Returns: boolean }
+      purchase_vip_item: {
+        Args: { _cost: number; _item_id: string; _item_type: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "user" | "vip" | "creator"

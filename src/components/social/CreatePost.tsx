@@ -43,10 +43,11 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
 
   useEffect(() => {
     if (!user) return;
-    const saved = localStorage.getItem(`vip_unlocked_${user.id}`);
-    if (saved) {
-      try { setUnlockedItems(JSON.parse(saved)); } catch {}
-    }
+    supabase
+      .from('user_unlocked_items')
+      .select('item_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => setUnlockedItems((data || []).map((r: { item_id: string }) => r.item_id)));
     supabase
       .from('user_stats')
       .select('total_points')

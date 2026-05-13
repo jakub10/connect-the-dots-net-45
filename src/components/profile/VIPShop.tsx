@@ -33,20 +33,14 @@ export function VIPShop() {
     const fetchUserData = async () => {
       if (!user) return;
       
-      const { data: stats } = await supabase
-        .from('user_stats')
-        .select('total_points')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      // For now, store unlocked items in local state
-      // In production, this would be in a separate table
-      const savedItems = localStorage.getItem(`vip_unlocked_${user.id}`);
-      const unlockedItems = savedItems ? JSON.parse(savedItems) : [];
+      const [{ data: stats }, { data: items }] = await Promise.all([
+        supabase.from('user_stats').select('total_points').eq('user_id', user.id).maybeSingle(),
+        supabase.from('user_unlocked_items').select('item_id').eq('user_id', user.id),
+      ]);
 
       setUserData({
         total_points: stats?.total_points || 0,
-        unlocked_items: unlockedItems,
+        unlocked_items: (items || []).map((r: { item_id: string }) => r.item_id),
       });
       setLoading(false);
     };
@@ -66,25 +60,23 @@ export function VIPShop() {
     }
 
     setPurchasing(itemId);
-    
+
     try {
-      // Deduct points
-      const newPoints = userData.total_points - cost;
-      const { error } = await supabase
-        .from('user_stats')
-        .update({ total_points: newPoints })
-        .eq('user_id', user.id);
+      const { data, error } = await supabase.rpc('purchase_vip_item', {
+        _item_id: itemId,
+        _item_type: type,
+        _cost: cost,
+      });
 
       if (error) throw error;
 
-      // Save unlocked item
-      const newUnlocked = [...userData.unlocked_items, itemId];
-      localStorage.setItem(`vip_unlocked_${user.id}`, JSON.stringify(newUnlocked));
+      const result = data as { ok: boolean; new_balance?: number; already_owned?: boolean };
+      const newPoints = result.new_balance ?? userData.total_points;
+      const newUnlocked = userData.unlocked_items.includes(itemId)
+        ? userData.unlocked_items
+        : [...userData.unlocked_items, itemId];
 
-      setUserData({
-        total_points: newPoints,
-        unlocked_items: newUnlocked,
-      });
+      setUserData({ total_points: newPoints, unlocked_items: newUnlocked });
 
       toast({
         title: '🎉 Zakoupeno!',
