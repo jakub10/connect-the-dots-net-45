@@ -135,18 +135,8 @@ export function SnakeGame({ isOpen, onClose }: SnakeGameProps) {
     
     const currentBest = currentData?.snake_best || 0;
     if (newScore <= currentBest) return;
-    
-    await supabase
-      .from('user_game_stats')
-      .upsert({ 
-        user_id: user.id, 
-        snake_best: newScore,
-        updated_at: new Date().toISOString()
-      });
-    
-    await supabase
-      .from('game_scores')
-      .insert({ user_id: user.id, game_type: 'snake', score: newScore });
+
+    await supabase.rpc('submit_game_score', { _game_type: 'snake', _score: newScore });
 
     setHighScore(newScore);
     toast({

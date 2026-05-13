@@ -115,13 +115,7 @@ export function VIPPuzzleGame({ isOpen, onClose }: VIPPuzzleGameProps) {
   const saveScore = async (newScore: number) => {
     if (!user || newScore <= bestScore) return;
     
-    await supabase
-      .from('user_game_stats')
-      .upsert({
-        user_id: user.id,
-        memory_best: newScore,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+    await supabase.rpc('submit_game_score', { _game_type: 'memory', _score: newScore });
     
     setBestScore(newScore);
   };

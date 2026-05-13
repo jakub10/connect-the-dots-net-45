@@ -62,17 +62,7 @@ export function ClickerGame({ isOpen, onClose }: ClickerGameProps) {
   const saveScore = useCallback(async (newTotal: number) => {
     if (!user || newTotal <= highScore) return;
     
-    await supabase
-      .from('user_game_stats')
-      .upsert({ 
-        user_id: user.id, 
-        clicker_best: newTotal,
-        updated_at: new Date().toISOString()
-      });
-    
-    await supabase
-      .from('game_scores')
-      .insert({ user_id: user.id, game_type: 'clicker', score: newTotal });
+    await supabase.rpc('submit_game_score', { _game_type: 'clicker', _score: Math.floor(newTotal) });
 
     setHighScore(newTotal);
     toast({
