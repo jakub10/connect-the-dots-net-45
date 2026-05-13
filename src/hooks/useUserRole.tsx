@@ -5,9 +5,6 @@ import { useToast } from '@/hooks/use-toast';
 
 type AppRole = 'user' | 'vip' | 'creator';
 
-const VIP_CODE = 'EdKubvIp@HK.SK';
-const CREATOR_PASSWORD = 'KshsNatVurCe';
-
 export function useUserRole() {
   const { user } = useAuth();
   const { toast } = useToast();
