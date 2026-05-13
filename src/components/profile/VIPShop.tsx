@@ -65,7 +65,6 @@ export function VIPShop() {
       const { data, error } = await supabase.rpc('purchase_vip_item', {
         _item_id: itemId,
         _item_type: type,
-        _cost: cost,
       });
 
       if (error) throw error;
