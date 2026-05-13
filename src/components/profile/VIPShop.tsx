@@ -33,20 +33,14 @@ export function VIPShop() {
     const fetchUserData = async () => {
       if (!user) return;
       
-      const { data: stats } = await supabase
-        .from('user_stats')
-        .select('total_points')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      // For now, store unlocked items in local state
-      // In production, this would be in a separate table
-      const savedItems = localStorage.getItem(`vip_unlocked_${user.id}`);
-      const unlockedItems = savedItems ? JSON.parse(savedItems) : [];
+      const [{ data: stats }, { data: items }] = await Promise.all([
+        supabase.from('user_stats').select('total_points').eq('user_id', user.id).maybeSingle(),
+        supabase.from('user_unlocked_items').select('item_id').eq('user_id', user.id),
+      ]);
 
       setUserData({
         total_points: stats?.total_points || 0,
-        unlocked_items: unlockedItems,
+        unlocked_items: (items || []).map((r: { item_id: string }) => r.item_id),
       });
       setLoading(false);
     };
