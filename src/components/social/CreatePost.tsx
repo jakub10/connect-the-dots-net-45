@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Confetti } from '@/components/ui/Confetti';
 import { Image, Smile, MapPin, Send, X, Loader2, Sparkles } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [backgroundStyle, setBackgroundStyle] = useState<PostBackgroundStyle>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [unlockedItems, setUnlockedItems] = useState<string[]>([]);
   const [userPoints, setUserPoints] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -153,8 +155,9 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
       setContent('');
       setBackgroundStyle(null);
       removeImage();
+      setShowConfetti(true);
       toast({
-        title: 'Úspěch!',
+        title: '🎉 Úspěch!',
         description: 'Příspěvek byl publikován.',
       });
       onPostCreated?.();
@@ -286,5 +289,6 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
         </div>
       </div>
     </div>
+    <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} />
   );
 }
