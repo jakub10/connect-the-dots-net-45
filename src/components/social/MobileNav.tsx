@@ -2,17 +2,28 @@ import { Home, Search, MessageCircle, User, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useUnreadCounts } from '@/hooks/useUnreadCounts';
+
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
 
 export function MobileNav() {
   const location = useLocation();
   const { t } = useTranslation();
+  const { unreadNotifications, unreadMessages } = useUnreadCounts();
 
   const navItems = [
-    { icon: Home, label: t('nav.home'), path: '/' },
-    { icon: Search, label: t('nav.search'), path: '/search' },
-    { icon: Users, label: t('nav.groups'), path: '/groups' },
-    { icon: MessageCircle, label: t('nav.messages'), path: '/messages' },
-    { icon: User, label: t('nav.profile'), path: '/profile' },
+    { icon: Home, label: t('nav.home'), path: '/', badge: 0 },
+    { icon: Search, label: t('nav.search'), path: '/search', badge: 0 },
+    { icon: Users, label: t('nav.groups'), path: '/groups', badge: 0 },
+    { icon: MessageCircle, label: t('nav.messages'), path: '/messages', badge: unreadMessages },
+    { icon: User, label: t('nav.profile'), path: '/profile', badge: 0 },
   ];
 
   return (
@@ -29,7 +40,10 @@ export function MobileNav() {
                 isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <div className="relative">
+                <item.icon className="h-5 w-5" />
+                <UnreadBadge count={item.badge} />
+              </div>
               <span className="text-xs">{item.label}</span>
             </Link>
           );

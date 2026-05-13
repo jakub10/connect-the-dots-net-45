@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useUnreadCounts } from '@/hooks/useUnreadCounts';
 import logo from '@/assets/logo.jpg';
 
 interface SidebarProps {
@@ -19,16 +20,17 @@ export function Sidebar({ currentProfile }: SidebarProps) {
   const { signOut } = useAuth();
   const location = useLocation();
   const { t } = useTranslation();
+  const { unreadNotifications, unreadMessages } = useUnreadCounts();
 
   const navItems = [
-    { icon: Home, label: t('nav.home'), path: '/' },
-    { icon: Search, label: t('nav.search'), path: '/search' },
-    { icon: Bell, label: t('nav.notifications'), path: '/notifications' },
-    { icon: MessageCircle, label: t('nav.messages'), path: '/messages' },
-    { icon: Users, label: t('nav.groups'), path: '/groups' },
-    { icon: Bookmark, label: t('nav.saved'), path: '/saved' },
-    { icon: User, label: t('nav.profile'), path: '/profile' },
-    { icon: Settings, label: t('nav.settings'), path: '/settings' },
+    { icon: Home, label: t('nav.home'), path: '/', badge: 0 },
+    { icon: Search, label: t('nav.search'), path: '/search', badge: 0 },
+    { icon: Bell, label: t('nav.notifications'), path: '/notifications', badge: unreadNotifications },
+    { icon: MessageCircle, label: t('nav.messages'), path: '/messages', badge: unreadMessages },
+    { icon: Users, label: t('nav.groups'), path: '/groups', badge: 0 },
+    { icon: Bookmark, label: t('nav.saved'), path: '/saved', badge: 0 },
+    { icon: User, label: t('nav.profile'), path: '/profile', badge: 0 },
+    { icon: Settings, label: t('nav.settings'), path: '/settings', badge: 0 },
   ];
 
   return (
@@ -52,7 +54,14 @@ export function Sidebar({ currentProfile }: SidebarProps) {
                   isActive ? 'bg-accent text-primary' : ''
                 }`}
               >
-                <item.icon className="h-5 w-5" />
+                <div className="relative">
+                  <item.icon className="h-5 w-5" />
+                  {item.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
+                </div>
                 {item.label}
               </Button>
             </Link>

@@ -259,9 +259,19 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
                 unlockedEmojis={unlockedItems}
               />
             </div>
+            {content.length > 0 && (
+              <span className={cn(
+                "text-xs tabular-nums",
+                content.length > 450 ? "text-destructive font-semibold" :
+                content.length > 400 ? "text-yellow-500" :
+                "text-muted-foreground"
+              )}>
+                {content.length}/500
+              </span>
+            )}
             <Button
               onClick={handleSubmit}
-              disabled={(!content.trim() && !selectedImage) || isSubmitting}
+              disabled={(!content.trim() && !selectedImage) || isSubmitting || content.length > 500}
               size="sm"
               className="gap-2 shrink-0"
             >

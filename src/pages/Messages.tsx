@@ -592,7 +592,7 @@ const Messages = () => {
                       placeholder="Napiš zprávu..."
                       value={newMessage}
                       onChange={(e) => handleTyping(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                       className="flex-1"
                     />
                     <Button onClick={sendMessage} disabled={sendingMessage || !newMessage.trim()}>
