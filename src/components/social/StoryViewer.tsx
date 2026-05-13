@@ -78,18 +78,18 @@ export function StoryViewer({ stories, initialIndex, onClose }: StoryViewerProps
     if (isPaused) return;
 
     const interval = setInterval(() => {
-      setProgress(prev => {
-        const next = prev + (100 / (STORY_DURATION / 100));
-        if (next >= 100) {
-          goToNext();
-          return 0;
-        }
-        return next;
-      });
+      setProgress(prev => Math.min(prev + (100 / (STORY_DURATION / 100)), 100));
     }, 100);
 
     return () => clearInterval(interval);
-  }, [isPaused, goToNext]);
+  }, [isPaused]);
+
+  // Auto-advance when progress reaches 100
+  useEffect(() => {
+    if (progress >= 100) {
+      goToNext();
+    }
+  }, [progress, goToNext]);
 
   // Keyboard navigation
   useEffect(() => {

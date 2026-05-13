@@ -42,7 +42,7 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
               {currentProfile ? (
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={currentProfile.avatar_url || ''} />
-                  <AvatarFallback>{currentProfile.full_name[0]}</AvatarFallback>
+                  <AvatarFallback>{currentProfile.full_name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                 </Avatar>
               ) : (
                 <Menu className="h-5 w-5" />

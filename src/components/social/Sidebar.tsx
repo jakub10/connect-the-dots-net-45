@@ -66,7 +66,7 @@ export function Sidebar({ currentProfile }: SidebarProps) {
             <Link to="/profile">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={currentProfile.avatar_url || ''} />
-                <AvatarFallback>{currentProfile.full_name[0]}</AvatarFallback>
+                <AvatarFallback>{currentProfile.full_name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
               </Avatar>
             </Link>
             <div className="flex-1 min-w-0">

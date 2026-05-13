@@ -415,7 +415,7 @@ const Messages = () => {
                     >
                       <Avatar className="h-10 w-10">
                         <AvatarImage src={profile.avatar_url || ''} />
-                        <AvatarFallback>{profile.full_name[0]}</AvatarFallback>
+                        <AvatarFallback>{profile.full_name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{profile.full_name}</p>

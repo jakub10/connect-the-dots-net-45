@@ -206,7 +206,7 @@ const Search = () => {
                     >
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={profile.avatar_url || ''} />
-                        <AvatarFallback>{profile.full_name[0]}</AvatarFallback>
+                        <AvatarFallback>{profile.full_name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <p className="font-semibold">{profile.full_name}</p>

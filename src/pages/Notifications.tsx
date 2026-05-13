@@ -225,7 +225,7 @@ const Notifications = () => {
                     {notification.from_profile ? (
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={notification.from_profile.avatar_url || ''} />
-                        <AvatarFallback>{notification.from_profile.full_name[0]}</AvatarFallback>
+                        <AvatarFallback>{notification.from_profile.full_name?.[0]?.toUpperCase() || "U"}</AvatarFallback>
                       </Avatar>
                     ) : (
                       <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
