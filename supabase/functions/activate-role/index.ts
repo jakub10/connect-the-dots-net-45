@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VIP_CODE = Deno.env.get("VIP_ACTIVATION_CODE") ?? "EdKubvIp@HK.SK";
-const CREATOR_CODE = Deno.env.get("CREATOR_ACTIVATION_CODE") ?? "KshsNatVurCe";
+const VIP_CODE = Deno.env.get("VIP_ACTIVATION_CODE");
+const CREATOR_CODE = Deno.env.get("CREATOR_ACTIVATION_CODE");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -44,6 +44,13 @@ Deno.serve(async (req) => {
     }
 
     const expected = role === "vip" ? VIP_CODE : CREATOR_CODE;
+    if (!expected) {
+      console.error(`Activation code env var for role '${role}' is not set`);
+      return new Response(JSON.stringify({ error: "Server not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (typeof code !== "string" || code !== expected) {
       return new Response(JSON.stringify({ error: "Invalid code" }), {
         status: 403,
