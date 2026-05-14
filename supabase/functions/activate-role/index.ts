@@ -64,7 +64,8 @@ Deno.serve(async (req) => {
       .insert({ user_id: userData.user.id, role });
 
     if (insertErr && !insertErr.message.includes("duplicate")) {
-      return new Response(JSON.stringify({ error: insertErr.message }), {
+      console.error("activate-role insert failed:", insertErr);
+      return new Response(JSON.stringify({ error: "Role activation failed" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -74,7 +75,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
+    console.error("activate-role error:", e);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
