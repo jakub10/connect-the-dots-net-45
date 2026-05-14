@@ -48,8 +48,8 @@ export function FloatingGameMenu() {
         "fixed bottom-44 right-4 md:bottom-[6.5rem] md:right-6 z-[60] transition-all duration-300",
         isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       )}>
-        <div className="flex flex-col-reverse gap-3 mb-3">
-          {menuItems.map((item, index) => (
+        <div className="grid grid-cols-2 gap-3 mb-3 direction-rtl" style={{ direction: 'rtl' }}>
+          {[...menuItems].reverse().map((item, index) => (
             <button
               key={item.id}
               onClick={() => handleItemClick(item.id)}
