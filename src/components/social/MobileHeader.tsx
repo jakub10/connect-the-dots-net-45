@@ -27,8 +27,8 @@ export function MobileHeader({ currentProfile }: MobileHeaderProps) {
   const { t } = useTranslation();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border md:hidden safe-area-top">
-      <div className="flex items-center justify-between h-14 px-4 pt-safe">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border md:hidden pt-safe">
+      <div className="flex items-center justify-between h-14 px-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={logo} alt="Kamosféra" className="h-8 w-8 rounded-lg" />
           <h1 className="text-lg font-bold gradient-text">Kamosféra</h1>
