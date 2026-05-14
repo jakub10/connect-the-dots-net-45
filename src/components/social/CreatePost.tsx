@@ -41,19 +41,41 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
   const { toast } = useToast();
   const { isVIP } = useUserRole();
 
+  const refreshShopData = async () => {
+    if (!user) return;
+    const [{ data: items }, { data: stats }] = await Promise.all([
+      supabase.from('user_unlocked_items').select('item_id').eq('user_id', user.id),
+      supabase.from('user_stats').select('total_points').eq('user_id', user.id).maybeSingle(),
+    ]);
+    setUnlockedItems((items || []).map((r: { item_id: string }) => r.item_id));
+    setUserPoints(stats?.total_points || 0);
+  };
+
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('user_unlocked_items')
-      .select('item_id')
-      .eq('user_id', user.id)
-      .then(({ data }) => setUnlockedItems((data || []).map((r: { item_id: string }) => r.item_id)));
-    supabase
-      .from('user_stats')
-      .select('total_points')
-      .eq('user_id', user.id)
-      .maybeSingle()
-      .then(({ data }) => setUserPoints(data?.total_points || 0));
+    refreshShopData();
+
+    // Realtime: refresh when user purchases items or earns points
+    const channel = supabase
+      .channel(`shop-sync-${user.id}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'user_unlocked_items',
+        filter: `user_id=eq.${user.id}`,
+      }, () => refreshShopData())
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'user_stats',
+        filter: `user_id=eq.${user.id}`,
+      }, () => refreshShopData())
+      .subscribe();
+
+    // Also refresh when window/tab regains focus (e.g. coming back from shop)
+    const onFocus = () => refreshShopData();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [user]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
