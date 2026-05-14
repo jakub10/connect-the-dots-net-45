@@ -75,6 +75,8 @@ const Search = () => {
   }, [query, activeTab]);
 
   const search = async () => {
+    // Sanitize: cap length, escape ILIKE wildcards
+    const query = searchQuery.trim().slice(0, 100).replace(/[%_]/g, '\\$&');
     setLoading(true);
 
     if (activeTab === 'users') {

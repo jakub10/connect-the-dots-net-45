@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Bot, Gamepad2, Brain, MousePointer2, Crown, Mic } from 'lucide-react';
+import { Bot, Gamepad2, Brain, MousePointer2, Crown, Volume2, Shield, MessageSquare, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { AIChatWindow } from './AIChatWindow';
@@ -10,9 +10,10 @@ import { ClickerGame } from './ClickerGame';
 import { VIPPuzzleGame } from './VIPPuzzleGame';
 import { AIChatbotModal } from './AIChatbotModal';
 import { VoiceAgentModal } from './VoiceAgentModal';
+import { BrawlGame } from './BrawlGame';
 import { useUserRole } from '@/hooks/useUserRole';
 
-type ActiveModal = 'none' | 'ai' | 'snake' | 'tower' | 'memory' | 'clicker' | 'vip-puzzle' | 'chatbot' | 'voice';
+type ActiveModal = 'none' | 'ai' | 'snake' | 'tower' | 'memory' | 'clicker' | 'vip-puzzle' | 'chatbot' | 'voice' | 'brawl';
 
 export function FloatingGameMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,13 +22,14 @@ export function FloatingGameMenu() {
   const { t } = useTranslation();
 
   const baseMenuItems = [
-    { id: 'voice' as const, icon: Mic, label: t('fab.voice'), color: 'from-pink-500 to-rose-600' },
+    { id: 'brawl' as const, icon: Star, label: 'Brawlosféra', color: 'from-amber-400 to-yellow-600' },
+    { id: 'voice' as const, icon: Volume2, label: t('fab.voice'), color: 'from-pink-500 to-rose-600' },
     { id: 'clicker' as const, icon: MousePointer2, label: t('fab.clicker'), color: 'from-yellow-500 to-orange-600' },
     { id: 'memory' as const, icon: Brain, label: t('fab.memory'), color: 'from-blue-500 to-cyan-600' },
-    { id: 'tower' as const, icon: Gamepad2, label: t('fab.tower'), color: 'from-orange-500 to-red-600' },
+    { id: 'tower' as const, icon: Shield, label: t('fab.tower'), color: 'from-orange-500 to-red-600' },
     { id: 'snake' as const, icon: Gamepad2, label: t('fab.snake'), color: 'from-green-500 to-emerald-600' },
     { id: 'ai' as const, icon: Bot, label: t('fab.ai'), color: 'from-violet-500 to-purple-600' },
-    { id: 'chatbot' as const, icon: Bot, label: t('fab.chatbot'), color: 'from-blue-500 to-cyan-600' },
+    { id: 'chatbot' as const, icon: MessageSquare, label: t('fab.chatbot'), color: 'from-teal-500 to-cyan-700' },
   ];
 
   const vipMenuItems = isVIP || isCreator ? [
@@ -103,6 +105,7 @@ export function FloatingGameMenu() {
       <ClickerGame isOpen={activeModal === 'clicker'} onClose={() => setActiveModal('none')} />
       <VIPPuzzleGame isOpen={activeModal === 'vip-puzzle'} onClose={() => setActiveModal('none')} />
       <VoiceAgentModal isOpen={activeModal === 'voice'} onClose={() => setActiveModal('none')} />
+      <BrawlGame isOpen={activeModal === 'brawl'} onClose={() => setActiveModal('none')} />
     </>
   );
 }

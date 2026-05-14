@@ -190,9 +190,9 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
     setDeleting(true);
     try {
       // Delete post image from storage if exists
-      if (post.image_url && post.image_url.includes('posts')) {
+      if (post.image_url && post.image_url.includes('/posts/')) {
         const path = post.image_url.split('/posts/')[1];
-        if (path) {
+        if (path && /^[\w\-./]+$/.test(path) && !path.includes('..')) {
           await supabase.storage.from('posts').remove([path]);
         }
       }

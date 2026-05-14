@@ -124,7 +124,8 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'cs-CZ';
-    utterance.voice = getCzechVoice();
+    const czechVoice = getCzechVoice();
+    if (czechVoice) utterance.voice = czechVoice;
     utterance.rate = 0.94;
     utterance.pitch = 1.06;
     utterance.volume = 1;
@@ -155,21 +156,18 @@ export function VoiceAgentModal({ isOpen, onClose }: VoiceAgentModalProps) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Musíš se přihlásit.');
+      // Merge Czech instruction into the user message so AI answers the actual question
+      const messagesWithLang = [
+        ...memory,
+        { role: 'user' as const, content: `${userText}\n(Odpověz stručně česky.)` },
+      ];
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          messages: [
-            ...nextMemory,
-            {
-              role: 'user',
-              content: 'Odpověz krátce hlasem v češtině. Navazuj na naši předchozí konverzaci a nepřepínej jazyk.',
-            },
-          ],
-        }),
+        body: JSON.stringify({ messages: messagesWithLang }),
       });
 
       if (!response.ok || !response.body) {
