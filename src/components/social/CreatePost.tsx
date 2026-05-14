@@ -176,6 +176,7 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
   const previewBgClass = backgroundStyle ? getBackgroundClass(backgroundStyle) : 'bg-card';
 
   return (
+    <>
     <div className={cn("rounded-xl border border-border p-4 mb-4 animate-fadeIn", previewBgClass)}>
       <div className="flex gap-3">
         <Avatar className="h-10 w-10">
@@ -290,5 +291,6 @@ export function CreatePost({ onPostCreated, currentProfile }: CreatePostProps) {
       </div>
     </div>
     <Confetti active={showConfetti} onDone={() => setShowConfetti(false)} />
+    </>
   );
 }

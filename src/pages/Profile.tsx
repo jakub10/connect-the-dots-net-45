@@ -322,17 +322,19 @@ const Profile = () => {
                         <span>{profile.location}</span>
                       </div>
                     )}
-                    {profile?.website && (
-                      <a
-                        href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-primary hover:underline"
-                      >
-                        <LinkIcon className="h-4 w-4" />
-                        <span>{profile.website.replace(/^https?:\/\//, '')}</span>
-                      </a>
-                    )}
+                    {profile?.website && (() => {
+                      try {
+                        const url = new URL(profile.website.startsWith('http') ? profile.website : `https://${profile.website}`);
+                        if (!['http:', 'https:'].includes(url.protocol)) return null;
+                        return (
+                          <a href={url.href} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-primary hover:underline">
+                            <LinkIcon className="h-4 w-4" />
+                            <span>{url.hostname}</span>
+                          </a>
+                        );
+                      } catch { return null; }
+                    })()}
                     {profile?.created_at && (
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-4 w-4" />
