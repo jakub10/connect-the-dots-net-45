@@ -76,21 +76,22 @@ const Search = () => {
 
   const search = async () => {
     // Sanitize: cap length, escape ILIKE wildcards
-    const query = searchQuery.trim().slice(0, 100).replace(/[%_]/g, '\\$&');
+    const q = query.trim().slice(0, 100).replace(/[%_]/g, '\\$&');
+    if (!q) return;
     setLoading(true);
 
     if (activeTab === 'users') {
       const { data } = await supabase
         .from('profiles')
         .select('user_id, username, full_name, avatar_url, bio')
-        .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+        .or(`username.ilike.%${q}%,full_name.ilike.%${q}%`)
         .limit(20);
       setUsers(data || []);
     } else {
       const { data: postsData } = await supabase
         .from('posts')
         .select('*')
-        .ilike('content', `%${query}%`)
+        .ilike('content', `%${q}%`)
         .order('created_at', { ascending: false })
         .limit(20);
 

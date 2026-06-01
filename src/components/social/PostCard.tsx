@@ -509,16 +509,29 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
           </ScrollArea>
 
           {user && (
-            <div className="flex gap-2 pt-4 border-t border-border">
-              <Input
-                placeholder={t('post.writeComment')}
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && submitComment()}
-              />
-              <Button onClick={submitComment} disabled={!newComment.trim()}>
-                <Send className="h-4 w-4" />
-              </Button>
+            <div className="pt-4 border-t border-border space-y-1">
+              <div className="flex gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={post.profile?.avatar_url || ''} />
+                  <AvatarFallback>{user.email?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
+                </Avatar>
+                <Input
+                  placeholder={t('post.writeComment')}
+                  value={newComment}
+                  maxLength={2000}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && submitComment()}
+                  className="flex-1"
+                />
+                <Button onClick={submitComment} disabled={!newComment.trim()} size="icon">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              {newComment.length > 1500 && (
+                <p className="text-xs text-muted-foreground text-right pr-12">
+                  {newComment.length} / 2000
+                </p>
+              )}
             </div>
           )}
         </DialogContent>

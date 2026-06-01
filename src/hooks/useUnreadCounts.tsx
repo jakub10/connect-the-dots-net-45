@@ -48,7 +48,7 @@ export function useUnreadCounts() {
     fetchCounts();
 
     const channel = supabase
-      .channel('unread-counts')
+      .channel(`unread-counts-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchCounts)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, fetchCounts)
       .subscribe();
