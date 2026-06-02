@@ -164,7 +164,12 @@ export function Feed({ currentProfile }: FeedProps) {
       <CreatePost onPostCreated={fetchPosts} currentProfile={currentProfile} />
       
       {posts.length === 0 ? (
-        <div className="bg-card rounded-xl border border-border p-8 text-center">
+        <div className="bg-card rounded-xl border border-border p-8 text-center flex flex-col items-center gap-4">
+          <img
+            src={kamosferaKids}
+            alt="Kamarádi z Kamosféry"
+            className="w-48 h-48 sm:w-64 sm:h-64 object-contain"
+          />
           <p className="text-muted-foreground">
             <span className="text-gradient-flow font-semibold">Zatím žádné příspěvky.</span> Buď první, kdo něco sdílí!
           </p>
