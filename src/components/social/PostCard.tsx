@@ -429,8 +429,10 @@ export function PostCard({ post, onLikeChange, onPostDeleted }: PostCardProps) {
           >
             <img
               src={post.image_url}
-              alt="Post image"
-              className="w-full h-auto object-cover max-h-[500px]"
+              alt="Post"
+              loading="lazy"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+              className="w-full h-auto object-cover max-h-[500px] bg-muted"
             />
           </div>
         )}
