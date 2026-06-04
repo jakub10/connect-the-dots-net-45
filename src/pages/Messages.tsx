@@ -329,6 +329,15 @@ const Messages = () => {
     setSearchResults(data || []);
   };
 
+  const deleteMessage = async (messageId: string) => {
+    const { error } = await supabase.from('messages').delete().eq('id', messageId);
+    if (error) {
+      toast({ title: 'Chyba', description: 'Nepodařilo se smazat zprávu.', variant: 'destructive' });
+    } else {
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    }
+  };
+
   const startConversation = async (otherUser: Profile) => {
     if (!user) return;
 
