@@ -18,4 +18,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    target: "es2020",
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          supabase: ["@supabase/supabase-js"],
+          query: ["@tanstack/react-query"],
+          emoji: ["@emoji-mart/data", "@emoji-mart/react"],
+        },
+      },
+    },
+  },
 }));
