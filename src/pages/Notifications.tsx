@@ -8,6 +8,7 @@ import { MobileHeader } from '@/components/social/MobileHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, Bell, Heart, MessageCircle, UserPlus, Check } from 'lucide-react';
+import mascotSad from '@/assets/mascot-sad.png';
 import { formatDistanceToNow } from 'date-fns';
 import { cs } from 'date-fns/locale';
 
@@ -203,10 +204,10 @@ const Notifications = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : notifications.length === 0 ? (
-            <div className="bg-card rounded-xl border border-border p-8 text-center">
-              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="bg-card rounded-xl border border-border p-8 text-center flex flex-col items-center gap-4">
+              <img src={mascotSad} alt="" className="w-40 h-40 sm:w-48 sm:h-48 object-contain" loading="lazy" />
               <p className="text-muted-foreground">
-                Zatím nemáš žádná oznámení.
+                Zatím nemáš žádná oznámení. Až se něco stane, dáme ti vědět!
               </p>
             </div>
           ) : (

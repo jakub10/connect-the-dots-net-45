@@ -7,6 +7,7 @@ import { MobileNav } from '@/components/social/MobileNav';
 import { MobileHeader } from '@/components/social/MobileHeader';
 import { PostCard } from '@/components/social/PostCard';
 import { Loader2, Bookmark } from 'lucide-react';
+import mascotSleep from '@/assets/mascot-sleep.png';
 
 interface Profile {
   username: string;
@@ -153,10 +154,10 @@ const Saved = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : posts.length === 0 ? (
-            <div className="bg-card rounded-xl border border-border p-8 text-center">
-              <Bookmark className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="bg-card rounded-xl border border-border p-8 text-center flex flex-col items-center gap-4">
+              <img src={mascotSleep} alt="" className="w-40 h-40 sm:w-48 sm:h-48 object-contain" loading="lazy" />
               <p className="text-muted-foreground">
-                Zatím nemáš žádné uložené příspěvky.
+                Zatím nemáš žádné uložené příspěvky. Ulož si je hvězdičkou!
               </p>
             </div>
           ) : (

@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, Search as SearchIcon, Users, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import mascotSearch from '@/assets/mascot-search.png';
 
 interface Profile {
   user_id: string;
@@ -193,10 +194,10 @@ const Search = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : users.length === 0 ? (
-                <div className="bg-card rounded-xl border border-border p-8 text-center">
-                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <div className="bg-card rounded-xl border border-border p-8 text-center flex flex-col items-center gap-4">
+                  <img src={mascotSearch} alt="" className="w-36 h-36 sm:w-44 sm:h-44 object-contain" loading="lazy" />
                   <p className="text-muted-foreground">
-                    {query ? 'Žádní uživatelé nenalezeni' : 'Zadej hledaný výraz'}
+                    {query ? 'Žádní uživatelé nenalezeni' : 'Zadej hledaný výraz a najdi kamarády'}
                   </p>
                 </div>
               ) : (
@@ -231,8 +232,8 @@ const Search = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : posts.length === 0 ? (
-                <div className="bg-card rounded-xl border border-border p-8 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <div className="bg-card rounded-xl border border-border p-8 text-center flex flex-col items-center gap-4">
+                  <img src={mascotSearch} alt="" className="w-36 h-36 sm:w-44 sm:h-44 object-contain" loading="lazy" />
                   <p className="text-muted-foreground">
                     {query ? 'Žádné příspěvky nenalezeny' : 'Zadej hledaný výraz'}
                   </p>
