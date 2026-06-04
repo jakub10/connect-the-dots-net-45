@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Send, MessageCircle, Search, ArrowLeft, Smile, Check, CheckCheck, Image } from 'lucide-react';
+import { Loader2, Send, MessageCircle, Search, ArrowLeft, Smile, Check, CheckCheck, Image, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import data from '@emoji-mart/data';
