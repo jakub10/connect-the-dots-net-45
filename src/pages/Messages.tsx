@@ -455,8 +455,8 @@ const Messages = () => {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : conversations.length === 0 ? (
-                <div className="text-center py-8 px-4 text-muted-foreground">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <div className="text-center py-8 px-4 text-muted-foreground flex flex-col items-center gap-3">
+                  <img src={mascotChat} alt="" className="w-32 h-32 object-contain" loading="lazy" />
                   <p>Zatím žádné konverzace</p>
                   <p className="text-sm">Vyhledej uživatele a zahaj konverzaci</p>
                 </div>
@@ -641,9 +641,9 @@ const Messages = () => {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <div className="flex-1 flex items-center justify-center text-muted-foreground p-6">
+                <div className="text-center flex flex-col items-center gap-4">
+                  <img src={mascotChat} alt="" className="w-48 h-48 sm:w-56 sm:h-56 object-contain" loading="lazy" />
                   <p className="text-lg">Vyber konverzaci</p>
                   <p className="text-sm">nebo začni novou vyhledáním uživatele</p>
                 </div>
