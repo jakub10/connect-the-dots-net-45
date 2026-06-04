@@ -6,7 +6,7 @@ import { CreatePost } from './CreatePost';
 import { Stories } from './Stories';
 import { Loader2 } from 'lucide-react';
 import { PostBackgroundStyle } from './VIPPostFeatures';
-import kamosferaKids from '@/assets/kamosfera-kids.png';
+import kamosferaKids from '@/assets/kamosfera-mascot.png';
 
 interface Post {
   id: string;
