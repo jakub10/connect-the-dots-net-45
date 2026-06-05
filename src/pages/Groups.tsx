@@ -15,6 +15,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Users, MessageCircle, Send, Lock, Globe, LogOut, Settings, UserPlus, UserMinus, Crown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import mascotFriends from '@/assets/mascot-friends.png';
+import mascotWelcome from '@/assets/mascot-welcome.png';
+import mascotChat from '@/assets/mascot-chat.png';
 
 interface Profile {
   user_id: string;
@@ -450,8 +453,8 @@ const Groups = () => {
               <h2 className="font-semibold text-lg">Všechny skupiny</h2>
               {groups.length === 0 ? (
                 <Card>
-                  <CardContent className="py-8 text-center">
-                    <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <CardContent className="py-8 text-center flex flex-col items-center gap-4">
+                    <img src={mascotFriends} alt="Robot a kamarád pro skupiny" className="h-36 w-36 object-contain" loading="lazy" />
                     <p className="text-muted-foreground">Zatím nejsou žádné skupiny</p>
                   </CardContent>
                 </Card>
@@ -553,8 +556,8 @@ const Groups = () => {
                 <Card className="h-[500px] flex flex-col">
                   <ScrollArea className="flex-1 p-4">
                     {messages.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <div className="text-center py-8 text-muted-foreground flex flex-col items-center gap-4">
+                        <img src={mascotChat} alt="Robot připravený chatovat" className="h-32 w-32 object-contain" loading="lazy" />
                         <p>Zatím žádné zprávy</p>
                       </div>
                     ) : (
@@ -607,8 +610,8 @@ const Groups = () => {
                 </Card>
               ) : (
                 <Card className="h-[500px] flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <MessageCircle className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <div className="text-center text-muted-foreground flex flex-col items-center gap-4 px-6">
+                    <img src={mascotWelcome} alt="Robot vítá ve skupinách" className="h-36 w-36 object-contain" loading="lazy" />
                     <p>Vyberte skupinu pro zobrazení chatu</p>
                   </div>
                 </Card>

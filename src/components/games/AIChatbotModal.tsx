@@ -6,6 +6,7 @@ import { Bot, Send, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { supabase } from '@/integrations/supabase/client';
+import mascotThinking from '@/assets/mascot-thinking.png';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -144,8 +145,8 @@ export function AIChatbotModal({ isOpen, onClose }: AIChatbotModalProps) {
         {/* Messages */}
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {messages.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              <Bot className="h-16 w-16 mx-auto mb-4 opacity-50" />
+            <div className="text-center text-muted-foreground py-8 flex flex-col items-center">
+              <img src={mascotThinking} alt="Robot přemýšlí" className="h-32 w-32 mx-auto mb-4 object-contain" loading="lazy" />
               <p className="text-lg font-medium">Ahoj! Jsem tvůj AI kamarád 👋</p>
               <p className="text-sm mt-2">Na co se chceš zeptat?</p>
             </div>

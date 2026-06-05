@@ -14,6 +14,8 @@ import { Loader2, MapPin, Link as LinkIcon, Calendar, MessageCircle, UserPlus, U
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import mascotLost from '@/assets/mascot-lost.png';
+import mascotWelcome from '@/assets/mascot-welcome.png';
 
 interface Profile {
   user_id: string;
@@ -290,7 +292,8 @@ const UserProfile = () => {
         <MobileHeader currentProfile={currentProfile} />
         <Sidebar currentProfile={currentProfile} />
         <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
-          <div className="max-w-2xl mx-auto text-center py-12">
+          <div className="max-w-2xl mx-auto text-center py-12 flex flex-col items-center gap-4">
+            <img src={mascotLost} alt="Robot stránku nenašel" className="w-40 h-40 object-contain" loading="lazy" />
             <p className="text-muted-foreground">Uživatel nenalezen</p>
           </div>
         </main>
@@ -443,7 +446,8 @@ const UserProfile = () => {
           
           {posts.length === 0 ? (
             <Card>
-              <CardContent className="py-8 text-center">
+              <CardContent className="py-8 text-center flex flex-col items-center gap-4">
+                <img src={mascotWelcome} alt="Robot vítá na profilu" className="w-36 h-36 object-contain" loading="lazy" />
                 <p className="text-muted-foreground">
                   {isOwnProfile 
                     ? 'Zatím nemáte žádné příspěvky.' 
