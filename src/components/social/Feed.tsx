@@ -6,7 +6,7 @@ import { CreatePost } from './CreatePost';
 import { Stories } from './Stories';
 import { Loader2 } from 'lucide-react';
 import { PostBackgroundStyle } from './VIPPostFeatures';
-import kamosferaKids from '@/assets/kamosfera-mascot.png';
+import mascotWave from '@/assets/mascot-wave.png';
 
 interface Post {
   id: string;
@@ -167,9 +167,10 @@ export function Feed({ currentProfile }: FeedProps) {
       {posts.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center flex flex-col items-center gap-4">
           <img
-            src={kamosferaKids}
-            alt="Kamarádi z Kamosféry"
+            src={mascotWave}
+            alt="Robot mává"
             className="w-48 h-48 sm:w-64 sm:h-64 object-contain"
+            loading="lazy"
           />
           <p className="text-muted-foreground">
             <span className="text-gradient-flow font-semibold">Zatím žádné příspěvky.</span> Buď první, kdo něco sdílí!
