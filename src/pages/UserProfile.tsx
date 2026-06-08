@@ -16,6 +16,7 @@ import { cs } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import mascotLost from '@/assets/mascot-lost.png';
 import mascotWelcome from '@/assets/mascot-welcome.png';
+import mascotCamera from '@/assets/mascot-camera.png';
 
 interface Profile {
   user_id: string;
@@ -447,7 +448,7 @@ const UserProfile = () => {
           {posts.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center flex flex-col items-center gap-4">
-                <img src={mascotWelcome} alt="Robot vítá na profilu" className="w-36 h-36 object-contain" loading="lazy" />
+                <img src={isOwnProfile ? mascotCamera : mascotWelcome} alt="" className="w-36 h-36 object-contain" loading="lazy" />
                 <p className="text-muted-foreground">
                   {isOwnProfile 
                     ? 'Zatím nemáte žádné příspěvky.' 
