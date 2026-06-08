@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Trophy, Star, Lock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import mascotTrophy from '@/assets/mascot-trophy.png';
 
 interface Achievement {
   id: string;
@@ -142,28 +143,31 @@ export function Achievements({ userId }: { userId?: string }) {
       {/* Stats Overview */}
       <Card className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10">
         <CardContent className="py-6">
-          <div className="flex items-center justify-around text-center">
-            <div>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Trophy className="h-6 w-6 text-yellow-500" />
-                <span className="text-3xl font-bold">{unlockedCount}</span>
+          <div className="flex items-center gap-4">
+            <img src={mascotTrophy} alt="" className="hidden sm:block w-24 h-24 object-contain shrink-0" loading="lazy" />
+            <div className="flex flex-1 items-center justify-around text-center">
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Trophy className="h-6 w-6 text-yellow-500" />
+                  <span className="text-3xl font-bold">{unlockedCount}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Odemčeno</p>
               </div>
-              <p className="text-sm text-muted-foreground">Odemčeno</p>
-            </div>
-            <div className="h-12 w-px bg-border" />
-            <div>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Star className="h-6 w-6 text-primary" />
-                <span className="text-3xl font-bold">{totalPoints}</span>
+              <div className="h-12 w-px bg-border" />
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Star className="h-6 w-6 text-primary" />
+                  <span className="text-3xl font-bold">{totalPoints}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Bodů</p>
               </div>
-              <p className="text-sm text-muted-foreground">Bodů</p>
-            </div>
-            <div className="h-12 w-px bg-border" />
-            <div>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <span className="text-3xl font-bold">{achievements.length}</span>
+              <div className="h-12 w-px bg-border" />
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-3xl font-bold">{achievements.length}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Celkem achievementů</p>
               </div>
-              <p className="text-sm text-muted-foreground">Celkem achievementů</p>
             </div>
           </div>
         </CardContent>

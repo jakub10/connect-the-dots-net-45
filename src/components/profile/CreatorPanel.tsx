@@ -11,6 +11,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import mascotThumbsup from '@/assets/mascot-thumbsup.png';
+import mascotLock from '@/assets/mascot-lock.png';
 
 interface BannedUser {
   id: string;
@@ -364,8 +366,8 @@ export function CreatorPanel() {
               </div>
               
               {flaggedPosts.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  <Bot className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <div className="text-center py-6 text-muted-foreground flex flex-col items-center gap-2">
+                  <img src={mascotThumbsup} alt="" className="w-24 h-24 object-contain" loading="lazy" />
                   <p className="text-sm">Žádné nahlášené příspěvky</p>
                 </div>
               ) : (
@@ -519,9 +521,12 @@ export function CreatorPanel() {
                 </Button>
               </div>
               {bannedUsers.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Žádní zablokovaní uživatelé
-                </p>
+                <div className="flex flex-col items-center gap-2 py-4">
+                  <img src={mascotLock} alt="" className="w-24 h-24 object-contain" loading="lazy" />
+                  <p className="text-sm text-muted-foreground text-center">
+                    Žádní zablokovaní uživatelé
+                  </p>
+                </div>
               ) : (
                 <div className="max-h-40 overflow-y-auto space-y-2">
                   {bannedUsers.map((banned) => (
