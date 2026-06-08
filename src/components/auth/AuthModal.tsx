@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import mascotWave from '@/assets/mascot-wave.png';
 
 interface AuthModalProps {
   open: boolean;
@@ -78,6 +79,9 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
+          <div className="flex justify-center -mt-2">
+            <img src={mascotWave} alt="Robot mává" className="w-24 h-24 object-contain" loading="lazy" />
+          </div>
           <DialogTitle className="text-2xl font-bold text-center gradient-text">
             SocialConnect
           </DialogTitle>
