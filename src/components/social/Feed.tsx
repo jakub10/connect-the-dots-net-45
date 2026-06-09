@@ -47,8 +47,7 @@ export function Feed({ currentProfile }: FeedProps) {
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
 
