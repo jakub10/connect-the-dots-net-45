@@ -208,8 +208,8 @@ const Profile = () => {
             <CardHeader className="relative pt-0">
               {/* Avatar with upload */}
               <div className="absolute -top-16 left-6">
-                <div className="relative group">
-                  <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                <div className={`relative group ${isVipProMax ? 'p-1 rounded-full bg-[conic-gradient(from_0deg,#ff00ea,#7c00ff,#00e0ff,#00ff85,#ffe600,#ff7a00,#ff00ea)] animate-spin-slow' : ''}`}>
+                  <Avatar className={`h-32 w-32 border-4 ${isVipProMax ? 'border-background' : 'border-background'} shadow-lg`}>
                     <AvatarImage src={profile?.avatar_url || ''} />
                     <AvatarFallback className="text-4xl bg-primary/10">
                       {profile?.full_name?.[0] || 'U'}
