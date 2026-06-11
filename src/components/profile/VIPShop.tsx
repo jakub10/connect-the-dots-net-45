@@ -20,14 +20,14 @@ interface UserShopData {
 export function VIPShop() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isVIP } = useUserRole();
+  const { isVIP, isVipProMax } = useUserRole();
   const { t } = useTranslation();
   const [userData, setUserData] = useState<UserShopData>({ total_points: 0, unlocked_items: [] });
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
-  // VIP gets 50% discount on all paid items
-  const getEffectiveCost = (cost: number) => isVIP ? Math.ceil(cost / 2) : cost;
+  // VIP PRO MAX gets everything free, VIP gets 50% discount
+  const getEffectiveCost = (cost: number) => isVipProMax ? 0 : isVIP ? Math.ceil(cost / 2) : cost;
 
   useEffect(() => {
     const fetchUserData = async () => {
