@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import mascotWave from '@/assets/mascot-wave.png';
+import { lovable } from '@/integrations/lovable';
 
 interface AuthModalProps {
   open: boolean;
