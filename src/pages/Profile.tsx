@@ -251,7 +251,10 @@ const Profile = () => {
 
               {/* Name and username */}
               <div className="mt-12">
-                <CardTitle className="text-2xl">{profile?.full_name}</CardTitle>
+                <CardTitle className={`text-2xl flex items-center gap-2 ${isVipProMax ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent animate-gradient-x' : ''}`}>
+                  {profile?.full_name}
+                  {isVipProMax && <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 text-white font-bold">💎 PRO MAX</span>}
+                </CardTitle>
                 <p className="text-muted-foreground">@{profile?.username}</p>
               </div>
             </CardHeader>
