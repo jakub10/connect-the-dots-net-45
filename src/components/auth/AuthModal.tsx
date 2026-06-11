@@ -76,6 +76,25 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
     setIsLoading(false);
   };
 
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      toast({
+        title: 'Chyba přihlášení přes Google',
+        description: result.error.message || 'Zkus to prosím znovu.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+    if (result.redirected) return;
+    onOpenChange(false);
+    setIsLoading(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
