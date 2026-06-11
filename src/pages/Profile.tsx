@@ -45,7 +45,7 @@ const Profile = () => {
   
   // Initialize achievements hook and get VIP status
   useAchievements();
-  const { isVIP } = useUserRole();
+  const { isVIP, isVipProMax } = useUserRole();
 
   // Edit form state
   const [fullName, setFullName] = useState('');
@@ -208,8 +208,8 @@ const Profile = () => {
             <CardHeader className="relative pt-0">
               {/* Avatar with upload */}
               <div className="absolute -top-16 left-6">
-                <div className="relative group">
-                  <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                <div className={`relative group ${isVipProMax ? 'p-1 rounded-full bg-[conic-gradient(from_0deg,#ff00ea,#7c00ff,#00e0ff,#00ff85,#ffe600,#ff7a00,#ff00ea)] animate-spin-slow' : ''}`}>
+                  <Avatar className={`h-32 w-32 border-4 ${isVipProMax ? 'border-background' : 'border-background'} shadow-lg`}>
                     <AvatarImage src={profile?.avatar_url || ''} />
                     <AvatarFallback className="text-4xl bg-primary/10">
                       {profile?.full_name?.[0] || 'U'}
@@ -251,7 +251,10 @@ const Profile = () => {
 
               {/* Name and username */}
               <div className="mt-12">
-                <CardTitle className="text-2xl">{profile?.full_name}</CardTitle>
+                <CardTitle className={`text-2xl flex items-center gap-2 ${isVipProMax ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent animate-gradient-x' : ''}`}>
+                  {profile?.full_name}
+                  {isVipProMax && <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 text-white font-bold">💎 PRO MAX</span>}
+                </CardTitle>
                 <p className="text-muted-foreground">@{profile?.username}</p>
               </div>
             </CardHeader>

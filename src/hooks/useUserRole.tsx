@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-type AppRole = 'user' | 'vip' | 'creator';
+type AppRole = 'user' | 'vip' | 'creator' | 'vip_pro_max';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -34,13 +34,16 @@ export function useUserRole() {
     setLoading(false);
   };
 
-  const activateRole = async (role: 'vip' | 'creator', code: string): Promise<boolean> => {
+  const titleFor = (role: AppRole) =>
+    role === 'vip' ? 'VIP' : role === 'creator' ? 'Tvůrce' : 'VIP Pro Max';
+
+  const activateRole = async (role: 'vip' | 'creator' | 'vip_pro_max', code: string): Promise<boolean> => {
     if (!user) return false;
 
     if (roles.includes(role)) {
       toast({
-        title: role === 'vip' ? 'Již máte VIP' : 'Již jste tvůrce',
-        description: role === 'vip' ? 'Váš účet už má VIP status.' : 'Váš účet už má status tvůrce.',
+        title: `Již máte ${titleFor(role)}`,
+        description: `Váš účet už má status ${titleFor(role)}.`,
       });
       return true;
     }
@@ -51,25 +54,37 @@ export function useUserRole() {
 
     if (error || !data?.success) {
       toast({
-        title: role === 'vip' ? 'Neplatný kód' : 'Nesprávné heslo',
-        description: role === 'vip' ? 'VIP kód není správný.' : 'Heslo tvůrce není správné.',
+        title: 'Neplatný kód',
+        description: `Kód pro aktivaci ${titleFor(role)} není správný.`,
         variant: 'destructive',
       });
       return false;
     }
 
-    setRoles(prev => [...prev, role]);
+    if (role === 'vip_pro_max') {
+      setRoles(prev => Array.from(new Set([...prev, 'vip', 'vip_pro_max'])) as AppRole[]);
+    } else {
+      setRoles(prev => [...prev, role]);
+    }
     toast({
-      title: role === 'vip' ? '🌟 VIP Aktivováno!' : '👑 Tvůrce Aktivován!',
-      description: role === 'vip' ? 'Nyní máte přístup k VIP funkcím.' : 'Nyní máte plná oprávnění tvůrce.',
+      title:
+        role === 'vip' ? '🌟 VIP Aktivováno!' :
+        role === 'creator' ? '👑 Tvůrce Aktivován!' :
+        '💎 VIP PRO MAX Aktivováno!',
+      description:
+        role === 'vip_pro_max'
+          ? 'Získal jsi MEGA balíček: vše zdarma, exkluzivní odznak, neomezené možnosti!'
+          : `Nyní máte přístup k funkcím ${titleFor(role)}.`,
     });
     return true;
   };
 
   const activateVIP = useCallback((code: string) => activateRole('vip', code), [user, roles, toast]);
   const activateCreator = useCallback((password: string) => activateRole('creator', password), [user, roles, toast]);
+  const activateVipProMax = useCallback((code: string) => activateRole('vip_pro_max', code), [user, roles, toast]);
 
-  const isVIP = roles.includes('vip');
+  const isVipProMax = roles.includes('vip_pro_max');
+  const isVIP = roles.includes('vip') || isVipProMax;
   const isCreator = roles.includes('creator');
 
   return {
@@ -77,8 +92,10 @@ export function useUserRole() {
     loading,
     isVIP,
     isCreator,
+    isVipProMax,
     activateVIP,
     activateCreator,
+    activateVipProMax,
     refetch: fetchRoles,
   };
 }

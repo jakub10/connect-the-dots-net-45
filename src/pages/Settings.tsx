@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { AvatarBuilder } from '@/components/profile/AvatarBuilder';
 import { useUserRole } from '@/hooks/useUserRole';
+import { VipProMaxActivation } from '@/components/profile/VipProMaxActivation';
 
 interface Profile {
   username: string;
@@ -292,6 +293,10 @@ const Settings = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* VIP PRO MAX Activation */}
+          <VipProMaxActivation />
+
 
           <Card className="border-destructive">
             <CardHeader>
