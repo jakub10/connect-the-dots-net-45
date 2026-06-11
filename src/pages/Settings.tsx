@@ -294,6 +294,10 @@ const Settings = () => {
             </CardContent>
           </Card>
 
+          {/* VIP PRO MAX Activation */}
+          <VipProMaxActivation />
+
+
           <Card className="border-destructive">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
