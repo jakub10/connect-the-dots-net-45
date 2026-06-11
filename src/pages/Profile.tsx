@@ -45,7 +45,7 @@ const Profile = () => {
   
   // Initialize achievements hook and get VIP status
   useAchievements();
-  const { isVIP } = useUserRole();
+  const { isVIP, isVipProMax } = useUserRole();
 
   // Edit form state
   const [fullName, setFullName] = useState('');
