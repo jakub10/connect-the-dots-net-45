@@ -51,14 +51,20 @@ export function VipProMaxActivation() {
               MEGA výhody:
             </h4>
             <ul className="text-sm text-muted-foreground space-y-1.5">
-              <li className="flex items-center gap-2"><Gem className="h-3 w-3 text-fuchsia-500" /> Exkluzivní PRO MAX odznak</li>
+              <li className="flex items-center gap-2"><Gem className="h-3 w-3 text-fuchsia-500" /> Exkluzivní PRO MAX odznak s pulzující animací</li>
               <li className="flex items-center gap-2"><InfinityIcon className="h-3 w-3 text-purple-500" /> Všechna pozadí a emoji ZDARMA</li>
-              <li className="flex items-center gap-2"><Zap className="h-3 w-3 text-yellow-500" /> Všechny VIP výhody</li>
-              <li className="flex items-center gap-2"><Trophy className="h-3 w-3 text-orange-500" /> Speciální duhový rámeček avataru</li>
-              <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-cyan-500" /> Animovaný gradient u jména</li>
+              <li className="flex items-center gap-2"><Zap className="h-3 w-3 text-yellow-500" /> Všechny VIP výhody v ceně</li>
+              <li className="flex items-center gap-2"><Trophy className="h-3 w-3 text-orange-500" /> Duhový rotující rámeček avataru</li>
+              <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-cyan-500" /> Plovoucí jiskřičky kolem avataru</li>
+              <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-fuchsia-500" /> Holografický cover na profilu</li>
+              <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-purple-500" /> Animovaný duhový rámeček celé profilové karty</li>
+              <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-cyan-500" /> Záře (glow) kolem profilovky</li>
+              <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-pink-500" /> Animovaný gradient u jména</li>
               <li className="flex items-center gap-2"><Check className="h-3 w-3 text-green-500" /> Neomezené příběhy & příspěvky</li>
               <li className="flex items-center gap-2"><Check className="h-3 w-3 text-green-500" /> Prioritní AI chatbot</li>
+              <li className="flex items-center gap-2"><Check className="h-3 w-3 text-green-500" /> Žádné reklamy & limity</li>
             </ul>
+
           </div>
         </CardContent>
       </Card>
@@ -83,9 +89,13 @@ export function VipProMaxActivation() {
         <ul className="text-sm text-muted-foreground space-y-1">
           <li className="flex items-center gap-2"><InfinityIcon className="h-3 w-3 text-purple-500" /> Všechna pozadí & emoji zdarma</li>
           <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-fuchsia-500" /> Animovaný gradient u jména</li>
-          <li className="flex items-center gap-2"><Trophy className="h-3 w-3 text-orange-500" /> Duhový rámeček avataru</li>
+          <li className="flex items-center gap-2"><Trophy className="h-3 w-3 text-orange-500" /> Rotující duhový rámeček avataru + glow</li>
+          <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-cyan-500" /> Plovoucí jiskřičky kolem profilovky</li>
+          <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-pink-500" /> Holografický cover & duhový rámeček karty</li>
+          <li className="flex items-center gap-2"><Gem className="h-3 w-3 text-fuchsia-500" /> Pulzující PRO MAX odznak</li>
           <li className="flex items-center gap-2"><Zap className="h-3 w-3 text-yellow-500" /> Zahrnuje všechny VIP funkce</li>
         </ul>
+
         <Input
           value={code}
           onChange={(e) => setCode(e.target.value)}
