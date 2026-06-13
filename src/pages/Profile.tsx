@@ -201,20 +201,29 @@ const Profile = () => {
       <main className="pt-16 pb-20 md:pt-6 md:pb-6 md:ml-64 lg:mr-80 px-4 md:px-8">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Profile Header Card */}
+          <div className={isVipProMax ? 'promax-card-border' : ''}>
           <Card className="overflow-hidden">
             {/* Cover Image */}
-            <div className="h-32 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
+            <div className={`h-32 ${isVipProMax ? 'promax-holo-cover' : 'bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20'}`} />
             
             <CardHeader className="relative pt-0">
               {/* Avatar with upload */}
               <div className="absolute -top-16 left-6">
-                <div className={`relative group ${isVipProMax ? 'p-1 rounded-full bg-[conic-gradient(from_0deg,#ff00ea,#7c00ff,#00e0ff,#00ff85,#ffe600,#ff7a00,#ff00ea)] animate-spin-slow' : ''}`}>
-                  <Avatar className={`h-32 w-32 border-4 ${isVipProMax ? 'border-background' : 'border-background'} shadow-lg`}>
+                <div className={`relative group ${isVipProMax ? 'p-1 rounded-full bg-[conic-gradient(from_0deg,#ff00ea,#7c00ff,#00e0ff,#00ff85,#ffe600,#ff7a00,#ff00ea)] animate-spin-slow promax-glow' : ''}`}>
+                  <Avatar className={`h-32 w-32 border-4 border-background shadow-lg`}>
                     <AvatarImage src={profile?.avatar_url || ''} />
                     <AvatarFallback className="text-4xl bg-primary/10">
                       {profile?.full_name?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
+
+                  {isVipProMax && (
+                    <>
+                      <Sparkles className="promax-sparkle absolute -top-2 -right-2 h-6 w-6 text-fuchsia-400 pointer-events-none" />
+                      <Sparkles className="promax-sparkle-2 absolute -bottom-1 -left-2 h-5 w-5 text-cyan-400 pointer-events-none" />
+                      <Gem className="promax-sparkle absolute top-1/2 -right-4 h-4 w-4 text-purple-400 pointer-events-none" />
+                    </>
+                  )}
                   
                   {/* Upload overlay */}
                   <button
@@ -251,9 +260,13 @@ const Profile = () => {
 
               {/* Name and username */}
               <div className="mt-12">
-                <CardTitle className={`text-2xl flex items-center gap-2 ${isVipProMax ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent animate-gradient-x' : ''}`}>
+                <CardTitle className={`text-2xl flex items-center gap-2 flex-wrap ${isVipProMax ? 'bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent animate-gradient-x' : ''}`}>
                   {profile?.full_name}
-                  {isVipProMax && <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 text-white font-bold">💎 PRO MAX</span>}
+                  {isVipProMax && (
+                    <span className="promax-badge text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 text-white font-bold inline-flex items-center gap-1">
+                      <Gem className="h-3 w-3" /> PRO MAX
+                    </span>
+                  )}
                 </CardTitle>
                 <p className="text-muted-foreground">@{profile?.username}</p>
               </div>
