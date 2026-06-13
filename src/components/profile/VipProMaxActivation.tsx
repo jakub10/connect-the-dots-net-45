@@ -89,9 +89,13 @@ export function VipProMaxActivation() {
         <ul className="text-sm text-muted-foreground space-y-1">
           <li className="flex items-center gap-2"><InfinityIcon className="h-3 w-3 text-purple-500" /> Všechna pozadí & emoji zdarma</li>
           <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-fuchsia-500" /> Animovaný gradient u jména</li>
-          <li className="flex items-center gap-2"><Trophy className="h-3 w-3 text-orange-500" /> Duhový rámeček avataru</li>
+          <li className="flex items-center gap-2"><Trophy className="h-3 w-3 text-orange-500" /> Rotující duhový rámeček avataru + glow</li>
+          <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-cyan-500" /> Plovoucí jiskřičky kolem profilovky</li>
+          <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-pink-500" /> Holografický cover & duhový rámeček karty</li>
+          <li className="flex items-center gap-2"><Gem className="h-3 w-3 text-fuchsia-500" /> Pulzující PRO MAX odznak</li>
           <li className="flex items-center gap-2"><Zap className="h-3 w-3 text-yellow-500" /> Zahrnuje všechny VIP funkce</li>
         </ul>
+
         <Input
           value={code}
           onChange={(e) => setCode(e.target.value)}
