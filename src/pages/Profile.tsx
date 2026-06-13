@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3, Trophy, Crown, ShoppingCart } from 'lucide-react';
+import { Loader2, Save, MapPin, Link as LinkIcon, Calendar, Camera, X, Edit3, Trophy, Crown, ShoppingCart, Sparkles, Gem } from 'lucide-react';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { Achievements } from '@/components/profile/Achievements';
