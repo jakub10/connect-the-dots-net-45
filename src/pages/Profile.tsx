@@ -362,6 +362,9 @@ const Profile = () => {
               )}
             </CardContent>
           </Card>
+          </div>
+
+
 
           {/* Tabs for content */}
           <Tabs defaultValue="achievements" className="w-full">
