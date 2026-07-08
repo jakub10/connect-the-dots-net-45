@@ -610,6 +610,91 @@ export function CreatorPanel() {
               )}
             </div>
           </TabsContent>
+
+          {/* Codes Tab */}
+          <TabsContent value="codes" className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button
+                onClick={() => generateCode('vip')}
+                disabled={generatingRole !== null}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 text-white"
+              >
+                {generatingRole === 'vip' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Crown className="h-4 w-4 mr-2" />
+                )}
+                Vytvořit VIP kód (30 Kč)
+              </Button>
+              <Button
+                onClick={() => generateCode('vip_pro_max')}
+                disabled={generatingRole !== null}
+                className="bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 hover:opacity-90 text-white"
+              >
+                {generatingRole === 'vip_pro_max' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Gem className="h-4 w-4 mr-2" />
+                )}
+                Vytvořit PRO MAX kód (50 Kč)
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-purple-500" />
+                  Aktivní kódy ({codes.length})
+                </label>
+                <Button variant="ghost" size="sm" onClick={fetchCodes} disabled={loadingCodes}>
+                  <RefreshCw className={`h-4 w-4 ${loadingCodes ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+
+              {codes.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Zatím nejsou žádné aktivní kódy. Kód se po použití automaticky smaže.
+                </p>
+              ) : (
+                <div className="max-h-72 overflow-y-auto space-y-2">
+                  {codes.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between gap-2 bg-muted/30 rounded-lg p-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {c.role === 'vip_pro_max' ? (
+                            <Gem className="h-3.5 w-3.5 text-fuchsia-500 shrink-0" />
+                          ) : (
+                            <Crown className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+                          )}
+                          <code className="text-sm font-mono truncate">{c.code}</code>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {c.role === 'vip_pro_max' ? 'VIP PRO MAX · 50 Kč' : 'VIP · 30 Kč'}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => copyCode(c.code)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteCode(c.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Každý kód lze použít pouze jednou. Po aktivaci se automaticky odstraní ze systému.
+              </p>
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* Stats */}
