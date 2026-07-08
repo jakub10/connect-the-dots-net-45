@@ -47,6 +47,30 @@ export type Database = {
         }
         Relationships: []
       }
+      activation_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       banned_users: {
         Row: {
           banned_at: string | null
@@ -744,6 +768,10 @@ export type Database = {
       check_user_achievements: {
         Args: { _user_id: string }
         Returns: undefined
+      }
+      create_activation_code: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: string
       }
       create_realtime_ws_ticket: { Args: never; Returns: string }
       creator_ban_user: {

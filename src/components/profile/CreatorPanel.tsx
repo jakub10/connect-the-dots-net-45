@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag } from 'lucide-react';
+import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag, Crown, Gem, Copy, KeyRound } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,13 @@ interface FlaggedNotification {
   read: boolean;
 }
 
+interface ActivationCode {
+  id: string;
+  code: string;
+  role: 'vip' | 'vip_pro_max';
+  created_at: string;
+}
+
 export function CreatorPanel() {
   const { isCreator, activateCreator, loading } = useUserRole();
   const { user } = useAuth();
@@ -46,6 +53,9 @@ export function CreatorPanel() {
   const [loadingBanned, setLoadingBanned] = useState(false);
   const [loadingFlagged, setLoadingFlagged] = useState(false);
   const [runningModeration, setRunningModeration] = useState(false);
+  const [codes, setCodes] = useState<ActivationCode[]>([]);
+  const [loadingCodes, setLoadingCodes] = useState(false);
+  const [generatingRole, setGeneratingRole] = useState<'vip' | 'vip_pro_max' | null>(null);
 
   const fetchBannedUsers = async () => {
     if (!isCreator) return;
@@ -79,12 +89,57 @@ export function CreatorPanel() {
     setLoadingFlagged(false);
   };
 
+  const fetchCodes = async () => {
+    if (!isCreator) return;
+    setLoadingCodes(true);
+    const { data, error } = await (supabase as any)
+      .from('activation_codes')
+      .select('id, code, role, created_at')
+      .order('created_at', { ascending: false });
+    if (!error && data) setCodes(data as ActivationCode[]);
+    setLoadingCodes(false);
+  };
+
+  const generateCode = async (role: 'vip' | 'vip_pro_max') => {
+    setGeneratingRole(role);
+    const { data, error } = await (supabase as any).rpc('create_activation_code', { _role: role });
+    setGeneratingRole(null);
+    if (error) {
+      toast({ title: 'Chyba', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: role === 'vip' ? '🌟 VIP kód vytvořen' : '💎 VIP PRO MAX kód vytvořen',
+      description: `Kód: ${data}`,
+    });
+    await fetchCodes();
+    try { await navigator.clipboard.writeText(data as string); } catch {}
+  };
+
+  const deleteCode = async (id: string) => {
+    const { error } = await (supabase as any).from('activation_codes').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Chyba', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setCodes(prev => prev.filter(c => c.id !== id));
+  };
+
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast({ title: '📋 Zkopírováno', description: code });
+    } catch {}
+  };
+
   useEffect(() => {
     if (isCreator) {
       fetchBannedUsers();
       fetchFlaggedPosts();
+      fetchCodes();
     }
   }, [isCreator, user]);
+
 
   const handleActivate = async () => {
     if (!password.trim()) return;
@@ -306,7 +361,7 @@ export function CreatorPanel() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="moderation" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="moderation" className="gap-1">
               <Bot className="h-4 w-4" />
               <span className="hidden sm:inline">AI Moderace</span>
@@ -318,6 +373,10 @@ export function CreatorPanel() {
             <TabsTrigger value="users" className="gap-1">
               <Ban className="h-4 w-4" />
               <span className="hidden sm:inline">Uživatelé</span>
+            </TabsTrigger>
+            <TabsTrigger value="codes" className="gap-1">
+              <KeyRound className="h-4 w-4" />
+              <span className="hidden sm:inline">Kódy</span>
             </TabsTrigger>
           </TabsList>
 
@@ -549,6 +608,91 @@ export function CreatorPanel() {
                   ))}
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          {/* Codes Tab */}
+          <TabsContent value="codes" className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button
+                onClick={() => generateCode('vip')}
+                disabled={generatingRole !== null}
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:opacity-90 text-white"
+              >
+                {generatingRole === 'vip' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Crown className="h-4 w-4 mr-2" />
+                )}
+                Vytvořit VIP kód (30 Kč)
+              </Button>
+              <Button
+                onClick={() => generateCode('vip_pro_max')}
+                disabled={generatingRole !== null}
+                className="bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 hover:opacity-90 text-white"
+              >
+                {generatingRole === 'vip_pro_max' ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Gem className="h-4 w-4 mr-2" />
+                )}
+                Vytvořit PRO MAX kód (50 Kč)
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-purple-500" />
+                  Aktivní kódy ({codes.length})
+                </label>
+                <Button variant="ghost" size="sm" onClick={fetchCodes} disabled={loadingCodes}>
+                  <RefreshCw className={`h-4 w-4 ${loadingCodes ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+
+              {codes.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Zatím nejsou žádné aktivní kódy. Kód se po použití automaticky smaže.
+                </p>
+              ) : (
+                <div className="max-h-72 overflow-y-auto space-y-2">
+                  {codes.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between gap-2 bg-muted/30 rounded-lg p-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {c.role === 'vip_pro_max' ? (
+                            <Gem className="h-3.5 w-3.5 text-fuchsia-500 shrink-0" />
+                          ) : (
+                            <Crown className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+                          )}
+                          <code className="text-sm font-mono truncate">{c.code}</code>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {c.role === 'vip_pro_max' ? 'VIP PRO MAX · 50 Kč' : 'VIP · 30 Kč'}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => copyCode(c.code)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteCode(c.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Každý kód lze použít pouze jednou. Po aktivaci se automaticky odstraní ze systému.
+              </p>
             </div>
           </TabsContent>
         </Tabs>

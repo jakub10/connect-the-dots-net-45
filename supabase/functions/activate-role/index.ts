@@ -56,14 +56,33 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (typeof code !== "string" || code !== expected) {
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    let matched = typeof code === "string" && code === expected;
+    let singleUseId: string | null = null;
+
+    // If master password didn't match, try single-use activation codes from DB
+    if (!matched && typeof code === "string" && code.length > 0) {
+      const { data: codeRow } = await admin
+        .from("activation_codes")
+        .select("id, role")
+        .eq("code", code)
+        .eq("role", role)
+        .maybeSingle();
+
+      if (codeRow) {
+        matched = true;
+        singleUseId = codeRow.id;
+      }
+    }
+
+    if (!matched) {
       return new Response(JSON.stringify({ error: "Invalid code" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const admin = createClient(supabaseUrl, serviceKey);
     const rolesToInsert = role === "vip_pro_max"
       ? [{ user_id: userData.user.id, role: "vip" }, { user_id: userData.user.id, role: "vip_pro_max" }]
       : [{ user_id: userData.user.id, role }];
@@ -78,6 +97,13 @@ Deno.serve(async (req) => {
         });
       }
     }
+
+    // If a single-use code was used, delete it so it can't be reused
+    if (singleUseId) {
+      await admin.from("activation_codes").delete().eq("id", singleUseId);
+    }
+
+
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
