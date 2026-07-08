@@ -89,12 +89,57 @@ export function CreatorPanel() {
     setLoadingFlagged(false);
   };
 
+  const fetchCodes = async () => {
+    if (!isCreator) return;
+    setLoadingCodes(true);
+    const { data, error } = await (supabase as any)
+      .from('activation_codes')
+      .select('id, code, role, created_at')
+      .order('created_at', { ascending: false });
+    if (!error && data) setCodes(data as ActivationCode[]);
+    setLoadingCodes(false);
+  };
+
+  const generateCode = async (role: 'vip' | 'vip_pro_max') => {
+    setGeneratingRole(role);
+    const { data, error } = await (supabase as any).rpc('create_activation_code', { _role: role });
+    setGeneratingRole(null);
+    if (error) {
+      toast({ title: 'Chyba', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: role === 'vip' ? '🌟 VIP kód vytvořen' : '💎 VIP PRO MAX kód vytvořen',
+      description: `Kód: ${data}`,
+    });
+    await fetchCodes();
+    try { await navigator.clipboard.writeText(data as string); } catch {}
+  };
+
+  const deleteCode = async (id: string) => {
+    const { error } = await (supabase as any).from('activation_codes').delete().eq('id', id);
+    if (error) {
+      toast({ title: 'Chyba', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setCodes(prev => prev.filter(c => c.id !== id));
+  };
+
+  const copyCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast({ title: '📋 Zkopírováno', description: code });
+    } catch {}
+  };
+
   useEffect(() => {
     if (isCreator) {
       fetchBannedUsers();
       fetchFlaggedPosts();
+      fetchCodes();
     }
   }, [isCreator, user]);
+
 
   const handleActivate = async () => {
     if (!password.trim()) return;
