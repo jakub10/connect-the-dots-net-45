@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag } from 'lucide-react';
+import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag, Crown, Gem, Copy, KeyRound } from 'lucide-react';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,13 @@ interface FlaggedNotification {
   read: boolean;
 }
 
+interface ActivationCode {
+  id: string;
+  code: string;
+  role: 'vip' | 'vip_pro_max';
+  created_at: string;
+}
+
 export function CreatorPanel() {
   const { isCreator, activateCreator, loading } = useUserRole();
   const { user } = useAuth();
@@ -46,6 +53,9 @@ export function CreatorPanel() {
   const [loadingBanned, setLoadingBanned] = useState(false);
   const [loadingFlagged, setLoadingFlagged] = useState(false);
   const [runningModeration, setRunningModeration] = useState(false);
+  const [codes, setCodes] = useState<ActivationCode[]>([]);
+  const [loadingCodes, setLoadingCodes] = useState(false);
+  const [generatingRole, setGeneratingRole] = useState<'vip' | 'vip_pro_max' | null>(null);
 
   const fetchBannedUsers = async () => {
     if (!isCreator) return;
