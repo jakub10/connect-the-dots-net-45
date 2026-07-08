@@ -98,6 +98,13 @@ Deno.serve(async (req) => {
       }
     }
 
+    // If a single-use code was used, delete it so it can't be reused
+    if (singleUseId) {
+      await admin.from("activation_codes").delete().eq("id", singleUseId);
+    }
+
+
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
