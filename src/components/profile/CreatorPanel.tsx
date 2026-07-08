@@ -361,7 +361,7 @@ export function CreatorPanel() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="moderation" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
+          <TabsList className="grid w-full grid-cols-4 mb-4">
             <TabsTrigger value="moderation" className="gap-1">
               <Bot className="h-4 w-4" />
               <span className="hidden sm:inline">AI Moderace</span>
@@ -373,6 +373,10 @@ export function CreatorPanel() {
             <TabsTrigger value="users" className="gap-1">
               <Ban className="h-4 w-4" />
               <span className="hidden sm:inline">Uživatelé</span>
+            </TabsTrigger>
+            <TabsTrigger value="codes" className="gap-1">
+              <KeyRound className="h-4 w-4" />
+              <span className="hidden sm:inline">Kódy</span>
             </TabsTrigger>
           </TabsList>
 
