@@ -271,9 +271,13 @@ const Settings = () => {
                 <Crown className="h-5 w-5 text-yellow-500" />
                 VIP Aktivace
               </CardTitle>
-              <CardDescription>Aktivuj VIP pomocí kódu</CardDescription>
+              <CardDescription>Aktivuj VIP pomocí kódu — cena 30 Kč</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm">
+                <span className="font-bold text-yellow-600 dark:text-yellow-400">Cena VIP: 30 Kč</span>
+                <p className="text-xs text-muted-foreground mt-1">Jednorázový kód získáš od tvůrce po zaplacení.</p>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="vip-code">VIP kód</Label>
                 <Input

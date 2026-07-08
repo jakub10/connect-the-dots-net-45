@@ -86,6 +86,12 @@ export function VipProMaxActivation() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 relative">
+        <div className="rounded-lg border border-fuchsia-500/40 bg-gradient-to-r from-fuchsia-500/10 to-cyan-500/10 p-3 text-sm">
+          <span className="font-bold bg-gradient-to-r from-fuchsia-500 to-cyan-500 bg-clip-text text-transparent">Cena: 50 Kč</span>
+          <p className="text-xs text-muted-foreground mt-1">
+            Jednorázový kód získáš od tvůrce po zaplacení.
+          </p>
+        </div>
         <ul className="text-sm text-muted-foreground space-y-1">
           <li className="flex items-center gap-2"><InfinityIcon className="h-3 w-3 text-purple-500" /> Všechna pozadí & emoji zdarma</li>
           <li className="flex items-center gap-2"><Sparkles className="h-3 w-3 text-fuchsia-500" /> Animovaný gradient u jména</li>
@@ -95,6 +101,7 @@ export function VipProMaxActivation() {
           <li className="flex items-center gap-2"><Gem className="h-3 w-3 text-fuchsia-500" /> Pulzující PRO MAX odznak</li>
           <li className="flex items-center gap-2"><Zap className="h-3 w-3 text-yellow-500" /> Zahrnuje všechny VIP funkce</li>
         </ul>
+
 
         <Input
           value={code}
