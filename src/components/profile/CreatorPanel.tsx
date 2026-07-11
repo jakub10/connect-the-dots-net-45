@@ -57,6 +57,64 @@ export function CreatorPanel() {
   const [codes, setCodes] = useState<ActivationCode[]>([]);
   const [loadingCodes, setLoadingCodes] = useState(false);
   const [generatingRole, setGeneratingRole] = useState<'vip' | 'vip_pro_max' | null>(null);
+  const [roleSearch, setRoleSearch] = useState('');
+  const [roleResults, setRoleResults] = useState<Array<{ user_id: string; username: string; full_name: string; avatar_url: string | null; roles: string[] }>>([]);
+  const [searchingRoles, setSearchingRoles] = useState(false);
+  const [updatingRoleFor, setUpdatingRoleFor] = useState<string | null>(null);
+
+  const searchUsersForRoles = async () => {
+    if (!isCreator) return;
+    setSearchingRoles(true);
+    try {
+      const term = roleSearch.trim();
+      let query = supabase
+        .from('profiles')
+        .select('user_id, username, full_name, avatar_url')
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (term) {
+        query = query.or(`username.ilike.%${term}%,full_name.ilike.%${term}%`);
+      }
+      const { data: profs, error } = await query;
+      if (error || !profs) {
+        setRoleResults([]);
+        return;
+      }
+      const ids = profs.map((p: any) => p.user_id);
+      const { data: rolesRows } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', ids);
+      const byUser: Record<string, string[]> = {};
+      (rolesRows || []).forEach((r: any) => {
+        byUser[r.user_id] = [...(byUser[r.user_id] || []), r.role];
+      });
+      setRoleResults(profs.map((p: any) => ({ ...p, roles: byUser[p.user_id] || [] })));
+    } finally {
+      setSearchingRoles(false);
+    }
+  };
+
+  const setUserRole = async (target_user_id: string, role: 'vip' | 'vip_pro_max', action: 'grant' | 'revoke') => {
+    setUpdatingRoleFor(target_user_id + role + action);
+    const { data, error } = await supabase.functions.invoke('admin-set-role', {
+      body: { target_user_id, role, action },
+    });
+    setUpdatingRoleFor(null);
+    if (error || !data?.success) {
+      toast({
+        title: 'Chyba',
+        description: (data as any)?.error || error?.message || 'Nepodařilo se změnit roli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: action === 'grant' ? '✅ Role přiřazena' : '🗑️ Role odebrána',
+      description: role === 'vip_pro_max' ? 'VIP PRO MAX' : 'VIP',
+    });
+    await searchUsersForRoles();
+  };
 
   const fetchBannedUsers = async () => {
     if (!isCreator) return;
