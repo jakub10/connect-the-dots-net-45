@@ -95,7 +95,7 @@ export function CreatorPanel() {
     }
   };
 
-  const setUserRole = async (target_user_id: string, role: 'vip' | 'vip_pro_max', action: 'grant' | 'revoke') => {
+  const setUserRole = async (target_user_id: string, role: 'vip' | 'vip_pro_max' | 'creator', action: 'grant' | 'revoke') => {
     setUpdatingRoleFor(target_user_id + role + action);
     const { data, error } = await supabase.functions.invoke('admin-set-role', {
       body: { target_user_id, role, action },
@@ -111,7 +111,7 @@ export function CreatorPanel() {
     }
     toast({
       title: action === 'grant' ? '✅ Role přiřazena' : '🗑️ Role odebrána',
-      description: role === 'vip_pro_max' ? 'VIP PRO MAX' : 'VIP',
+      description: role === 'vip_pro_max' ? 'VIP PRO MAX' : role === 'creator' ? 'Tvůrce' : 'VIP',
     });
     await searchUsersForRoles();
   };
@@ -725,8 +725,23 @@ export function CreatorPanel() {
                           </div>
                         </div>
                       </div>
-                      {isCreatorUser ? (
-                        <p className="text-xs text-muted-foreground italic">Tvůrce nelze upravovat.</p>
+                      {u.user_id === user?.id ? (
+                        <p className="text-xs text-muted-foreground italic">Sebe sama nemůžeš upravovat.</p>
+                      ) : isCreatorUser ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setUserRole(u.user_id, 'creator', 'revoke')}
+                          disabled={updatingRoleFor === busyKey('creator', 'revoke')}
+                          className="w-full border-purple-500 text-purple-600"
+                        >
+                          {updatingRoleFor === busyKey('creator', 'revoke') ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : (
+                            <Shield className="h-3 w-3 mr-1" />
+                          )}
+                          Odebrat Tvůrce
+                        </Button>
                       ) : (
                         <div className="grid grid-cols-2 gap-2">
                           {isVip && !isMax ? (
@@ -789,6 +804,20 @@ export function CreatorPanel() {
                               Dát PRO MAX
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setUserRole(u.user_id, 'creator', 'grant')}
+                            disabled={updatingRoleFor === busyKey('creator', 'grant')}
+                            className="col-span-2 border-purple-500 text-purple-600 hover:bg-purple-500/10"
+                          >
+                            {updatingRoleFor === busyKey('creator', 'grant') ? (
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              <Shield className="h-3 w-3 mr-1" />
+                            )}
+                            Udělat Tvůrcem
+                          </Button>
                         </div>
                       )}
                     </div>

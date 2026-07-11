@@ -47,29 +47,41 @@ Deno.serve(async (req) => {
     }
 
     const { target_user_id, role, action } = await req.json();
-    if (!target_user_id || !["vip", "vip_pro_max"].includes(role) || !["grant", "revoke"].includes(action)) {
+    if (!target_user_id || !["vip", "vip_pro_max", "creator"].includes(role) || !["grant", "revoke"].includes(action)) {
       return new Response(JSON.stringify({ error: "Invalid payload" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Cannot modify creators
-    const { data: targetIsCreator } = await admin.rpc("has_role", {
-      _user_id: target_user_id,
-      _role: "creator",
-    });
-    if (targetIsCreator) {
-      return new Response(JSON.stringify({ error: "Cannot modify a creator" }), {
+    // Prevent self-modification of creator role
+    if (role === "creator" && target_user_id === userData.user.id) {
+      return new Response(JSON.stringify({ error: "Cannot modify your own creator role" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Cannot modify VIP/PRO MAX on creators
+    if (role !== "creator") {
+      const { data: targetIsCreator } = await admin.rpc("has_role", {
+        _user_id: target_user_id,
+        _role: "creator",
+      });
+      if (targetIsCreator) {
+        return new Response(JSON.stringify({ error: "Cannot modify a creator" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (action === "grant") {
       const rolesToInsert = role === "vip_pro_max"
         ? [{ user_id: target_user_id, role: "vip" }, { user_id: target_user_id, role: "vip_pro_max" }]
-        : [{ user_id: target_user_id, role: "vip" }];
+        : role === "creator"
+          ? [{ user_id: target_user_id, role: "creator" }]
+          : [{ user_id: target_user_id, role: "vip" }];
       for (const r of rolesToInsert) {
         const { error } = await admin.from("user_roles").insert(r);
         if (error && !error.message.includes("duplicate")) {
@@ -82,7 +94,11 @@ Deno.serve(async (req) => {
       }
     } else {
       // revoke
-      const rolesToDelete = role === "vip_pro_max" ? ["vip_pro_max"] : ["vip", "vip_pro_max"];
+      const rolesToDelete = role === "vip_pro_max"
+        ? ["vip_pro_max"]
+        : role === "creator"
+          ? ["creator"]
+          : ["vip", "vip_pro_max"];
       const { error } = await admin
         .from("user_roles")
         .delete()
