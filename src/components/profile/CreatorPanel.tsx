@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag, Crown, Gem, Copy, KeyRound } from 'lucide-react';
+import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag, Crown, Gem, Copy, KeyRound, Search, UserCog } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +57,64 @@ export function CreatorPanel() {
   const [codes, setCodes] = useState<ActivationCode[]>([]);
   const [loadingCodes, setLoadingCodes] = useState(false);
   const [generatingRole, setGeneratingRole] = useState<'vip' | 'vip_pro_max' | null>(null);
+  const [roleSearch, setRoleSearch] = useState('');
+  const [roleResults, setRoleResults] = useState<Array<{ user_id: string; username: string; full_name: string; avatar_url: string | null; roles: string[] }>>([]);
+  const [searchingRoles, setSearchingRoles] = useState(false);
+  const [updatingRoleFor, setUpdatingRoleFor] = useState<string | null>(null);
+
+  const searchUsersForRoles = async () => {
+    if (!isCreator) return;
+    setSearchingRoles(true);
+    try {
+      const term = roleSearch.trim();
+      let query = supabase
+        .from('profiles')
+        .select('user_id, username, full_name, avatar_url')
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (term) {
+        query = query.or(`username.ilike.%${term}%,full_name.ilike.%${term}%`);
+      }
+      const { data: profs, error } = await query;
+      if (error || !profs) {
+        setRoleResults([]);
+        return;
+      }
+      const ids = profs.map((p: any) => p.user_id);
+      const { data: rolesRows } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', ids);
+      const byUser: Record<string, string[]> = {};
+      (rolesRows || []).forEach((r: any) => {
+        byUser[r.user_id] = [...(byUser[r.user_id] || []), r.role];
+      });
+      setRoleResults(profs.map((p: any) => ({ ...p, roles: byUser[p.user_id] || [] })));
+    } finally {
+      setSearchingRoles(false);
+    }
+  };
+
+  const setUserRole = async (target_user_id: string, role: 'vip' | 'vip_pro_max', action: 'grant' | 'revoke') => {
+    setUpdatingRoleFor(target_user_id + role + action);
+    const { data, error } = await supabase.functions.invoke('admin-set-role', {
+      body: { target_user_id, role, action },
+    });
+    setUpdatingRoleFor(null);
+    if (error || !data?.success) {
+      toast({
+        title: 'Chyba',
+        description: (data as any)?.error || error?.message || 'Nepodařilo se změnit roli.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: action === 'grant' ? '✅ Role přiřazena' : '🗑️ Role odebrána',
+      description: role === 'vip_pro_max' ? 'VIP PRO MAX' : 'VIP',
+    });
+    await searchUsersForRoles();
+  };
 
   const fetchBannedUsers = async () => {
     if (!isCreator) return;
@@ -137,6 +196,7 @@ export function CreatorPanel() {
       fetchBannedUsers();
       fetchFlaggedPosts();
       fetchCodes();
+      searchUsersForRoles();
     }
   }, [isCreator, user]);
 
@@ -361,7 +421,7 @@ export function CreatorPanel() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="moderation" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsList className="grid w-full grid-cols-5 mb-4">
             <TabsTrigger value="moderation" className="gap-1">
               <Bot className="h-4 w-4" />
               <span className="hidden sm:inline">AI Moderace</span>
@@ -373,6 +433,10 @@ export function CreatorPanel() {
             <TabsTrigger value="users" className="gap-1">
               <Ban className="h-4 w-4" />
               <span className="hidden sm:inline">Uživatelé</span>
+            </TabsTrigger>
+            <TabsTrigger value="roles" className="gap-1">
+              <UserCog className="h-4 w-4" />
+              <span className="hidden sm:inline">Role</span>
             </TabsTrigger>
             <TabsTrigger value="codes" className="gap-1">
               <KeyRound className="h-4 w-4" />
@@ -607,6 +671,129 @@ export function CreatorPanel() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* Roles Tab */}
+          <TabsContent value="roles" className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Search className="h-4 w-4 text-purple-500" />
+                Hledat uživatele (jméno nebo přezdívka)
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={roleSearch}
+                  onChange={(e) => setRoleSearch(e.target.value)}
+                  placeholder="Zadej jméno..."
+                  onKeyDown={(e) => e.key === 'Enter' && searchUsersForRoles()}
+                />
+                <Button onClick={searchUsersForRoles} disabled={searchingRoles} variant="outline">
+                  {searchingRoles ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Klikni na uživatele a přiděl nebo odeber VIP / VIP PRO MAX.
+              </p>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto space-y-2">
+              {roleResults.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">Žádní uživatelé</p>
+              ) : (
+                roleResults.map((u) => {
+                  const isVip = u.roles.includes('vip');
+                  const isMax = u.roles.includes('vip_pro_max');
+                  const isCreatorUser = u.roles.includes('creator');
+                  const busyKey = (r: string, a: string) => u.user_id + r + a;
+                  return (
+                    <div key={u.user_id} className="bg-muted/30 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={u.avatar_url || undefined} />
+                          <AvatarFallback>{(u.username || '?').slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{u.full_name || u.username}</p>
+                          <p className="text-xs text-muted-foreground truncate">@{u.username}</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {isCreatorUser && <Badge className="bg-purple-500 text-white text-xs">Tvůrce</Badge>}
+                            {isMax && <Badge className="bg-gradient-to-r from-fuchsia-500 to-cyan-500 text-white text-xs">PRO MAX</Badge>}
+                            {isVip && !isMax && <Badge className="bg-yellow-500 text-white text-xs">VIP</Badge>}
+                            {!isVip && !isMax && !isCreatorUser && <Badge variant="outline" className="text-xs">Uživatel</Badge>}
+                          </div>
+                        </div>
+                      </div>
+                      {isCreatorUser ? (
+                        <p className="text-xs text-muted-foreground italic">Tvůrce nelze upravovat.</p>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {isVip && !isMax ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setUserRole(u.user_id, 'vip', 'revoke')}
+                              disabled={updatingRoleFor === busyKey('vip', 'revoke')}
+                              className="border-yellow-500 text-yellow-600"
+                            >
+                              {updatingRoleFor === busyKey('vip', 'revoke') ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <Crown className="h-3 w-3 mr-1" />
+                              )}
+                              Odebrat VIP
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => setUserRole(u.user_id, 'vip', 'grant')}
+                              disabled={isVip || updatingRoleFor === busyKey('vip', 'grant')}
+                              className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                            >
+                              {updatingRoleFor === busyKey('vip', 'grant') ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <Crown className="h-3 w-3 mr-1" />
+                              )}
+                              Dát VIP
+                            </Button>
+                          )}
+                          {isMax ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setUserRole(u.user_id, 'vip_pro_max', 'revoke')}
+                              disabled={updatingRoleFor === busyKey('vip_pro_max', 'revoke')}
+                              className="border-fuchsia-500 text-fuchsia-600"
+                            >
+                              {updatingRoleFor === busyKey('vip_pro_max', 'revoke') ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <Gem className="h-3 w-3 mr-1" />
+                              )}
+                              Odebrat PRO MAX
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => setUserRole(u.user_id, 'vip_pro_max', 'grant')}
+                              disabled={updatingRoleFor === busyKey('vip_pro_max', 'grant')}
+                              className="bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 text-white"
+                            >
+                              {updatingRoleFor === busyKey('vip_pro_max', 'grant') ? (
+                                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              ) : (
+                                <Gem className="h-3 w-3 mr-1" />
+                              )}
+                              Dát PRO MAX
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </TabsContent>
