@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.activate-role]
 verify_jwt = true
+
+[functions.admin-set-role]
+verify_jwt = true
