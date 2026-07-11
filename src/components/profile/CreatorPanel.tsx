@@ -196,6 +196,7 @@ export function CreatorPanel() {
       fetchBannedUsers();
       fetchFlaggedPosts();
       fetchCodes();
+      searchUsersForRoles();
     }
   }, [isCreator, user]);
 
