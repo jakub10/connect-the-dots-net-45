@@ -111,7 +111,7 @@ export function CreatorPanel() {
     }
     toast({
       title: action === 'grant' ? '✅ Role přiřazena' : '🗑️ Role odebrána',
-      description: role === 'vip_pro_max' ? 'VIP PRO MAX' : 'VIP',
+      description: role === 'vip_pro_max' ? 'VIP PRO MAX' : role === 'creator' ? 'Tvůrce' : 'VIP',
     });
     await searchUsersForRoles();
   };
