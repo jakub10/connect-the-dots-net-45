@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag, Crown, Gem, Copy, KeyRound } from 'lucide-react';
+import { Shield, Loader2, Trash2, Ban, Eye, AlertTriangle, UserX, RefreshCw, Bot, ExternalLink, Flag, Crown, Gem, Copy, KeyRound, Search, UserCog } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
