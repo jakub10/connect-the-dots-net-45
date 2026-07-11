@@ -95,7 +95,7 @@ export function CreatorPanel() {
     }
   };
 
-  const setUserRole = async (target_user_id: string, role: 'vip' | 'vip_pro_max', action: 'grant' | 'revoke') => {
+  const setUserRole = async (target_user_id: string, role: 'vip' | 'vip_pro_max' | 'creator', action: 'grant' | 'revoke') => {
     setUpdatingRoleFor(target_user_id + role + action);
     const { data, error } = await supabase.functions.invoke('admin-set-role', {
       body: { target_user_id, role, action },
