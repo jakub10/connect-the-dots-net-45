@@ -84,10 +84,51 @@ serve(async (req) => {
       );
     }
 
+    // Compute per-user posting stats to detect spam (rapid-fire posting / duplicates)
+    const byUser = new Map<string, typeof posts>();
+    for (const p of posts) {
+      const arr = byUser.get(p.user_id) ?? [];
+      arr.push(p);
+      byUser.set(p.user_id, arr);
+    }
+
+    const spamSignals: Record<string, { count_24h: number; burst_count: number; burst_window_seconds: number; duplicates: number }> = {};
+    for (const [uid, arr] of byUser) {
+      const sorted = [...arr].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      let maxBurst = 1;
+      let burstWindow = 0;
+      for (let i = 0; i < sorted.length; i++) {
+        for (let j = i + 1; j < sorted.length; j++) {
+          const diff = (new Date(sorted[j].created_at).getTime() - new Date(sorted[i].created_at).getTime()) / 1000;
+          if (diff <= 300) {
+            const c = j - i + 1;
+            if (c > maxBurst) { maxBurst = c; burstWindow = diff; }
+          } else break;
+        }
+      }
+      const seen = new Map<string, number>();
+      let dups = 0;
+      for (const p of sorted) {
+        const key = (p.content || '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 120);
+        if (!key) continue;
+        const n = (seen.get(key) ?? 0) + 1;
+        seen.set(key, n);
+        if (n > 1) dups++;
+      }
+      spamSignals[uid] = {
+        count_24h: sorted.length,
+        burst_count: maxBurst,
+        burst_window_seconds: Math.round(burstWindow),
+        duplicates: dups,
+      };
+    }
+
     // Prepare posts for AI analysis
     const postsForAnalysis = posts.map(p => ({
       id: p.id,
-      content: p.content.substring(0, 500), // Limit content length
+      user_id: p.user_id,
+      created_at: p.created_at,
+      content: p.content.substring(0, 500),
     }));
 
     // Call AI to analyze posts
@@ -107,17 +148,17 @@ serve(async (req) => {
 - Explicit sexual content
 - Violence or threats
 - Harassment or bullying
-- Spam or scam content
+- Spam or scam content (reklama, phishing, opakující se promo odkazy)
+- SPAMMING BEHAVIOR: uživatel posílá příliš mnoho příspěvků v krátkém čase (např. 5+ za 5 minut) nebo opakuje stejný/podobný obsah. Použij spam_signals (count_24h, burst_count, burst_window_seconds, duplicates). Pokud burst_count >= 5 v pár minutách nebo duplicates >= 3, označ dané příspěvky jako spam s důvodem v češtině, např. "Spam: uživatel poslal X příspěvků za Y sekund" nebo "Spam: opakující se obsah".
 - Illegal activity promotion
 
-For each post, determine if it should be flagged. Return a JSON array of flagged posts only.
-Each flagged item should have: post_id, reason (brief explanation in Czech), severity (low/medium/high).
-If no posts are problematic, return an empty array [].
+For each post that should be flagged, return post_id, reason (in Czech), severity (low/medium/high).
+If no posts are problematic, return an empty array.
 Only flag genuinely problematic content, not mild language or opinions.`
           },
           {
             role: "user",
-            content: `Analyze these posts:\n${JSON.stringify(postsForAnalysis, null, 2)}`
+            content: `spam_signals per user:\n${JSON.stringify(spamSignals, null, 2)}\n\nPosts to analyze:\n${JSON.stringify(postsForAnalysis, null, 2)}`
           }
         ],
         tools: [
