@@ -242,7 +242,7 @@ export function AvatarBuilder() {
     
     // Clothing - correct v7.x parameters
     params.set('clothing', cfg.clothing);
-    params.set('clothingColor', cfg.clothingColor);
+    params.set('clothesColor', cfg.clothingColor);
     
     // Accessories - omit if empty
     if (cfg.accessories) {
